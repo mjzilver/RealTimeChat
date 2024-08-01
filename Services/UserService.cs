@@ -1,6 +1,6 @@
 ﻿namespace B4mServer.Services
 {
-	public class UserServices
+	public class UserService
 	{
 	}
 }

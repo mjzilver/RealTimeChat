@@ -1,18 +1,27 @@
-﻿namespace B4mServer.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
-public class Channel
+namespace B4mServer.Models;
+
+public partial class Channel
 {
-	public int Id { get; set; }
-	public required string Name { get; set; }
+    public int Id { get; set; }
 
-	// UNIX timestamp
-	public long Created { get; set; }
+    public int? OwnerId { get; set; }
 
-	public string? Password { get; set; }
+    public string Name { get; set; } = null!;
 
-	public required string Color { get; set; }
+    public decimal Created { get; set; }
 
-	public List<User>? Users { get; set; }
+    public string Color { get; set; } = null!;
 
-	public int OwnerId { get; set; }
+    public string? Password { get; set; }
+
+	// Navigational Properties
+	[JsonIgnore]
+	public virtual User? Owner { get; set; }
+
+    [JsonIgnore]
+    public virtual ICollection<Message> Messages { get; set; } = [];
 }

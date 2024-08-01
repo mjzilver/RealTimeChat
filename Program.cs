@@ -17,11 +17,10 @@ builder.Services.AddCors(options =>
 	});
 });
 
-builder.Services.AddDbContext<ChatDbContext>(options =>
+builder.Services.AddDbContext<ForumContext>(options =>
 {
-	options.UseSqlite("Data Source=b4m.db");
+	options.UseSqlite("Data Source=forum.db");
 });
-
 builder.WebHost.UseUrls("http://localhost:5000");
 
 var app = builder.Build();

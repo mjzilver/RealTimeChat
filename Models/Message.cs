@@ -1,19 +1,23 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Text.Json.Serialization;
 
 namespace B4mServer.Models;
 
-public class Message
+public partial class Message
 {
-	[Key]
-	public int Id { get; set; }
-	public string Text { get; set; } = "";
-	public int UserId { get; set; }
-	public int ChannelId { get; set; }
-	
-	// UNIX timestamp
-	public long Time { get; set; }
+    public int Id { get; set; }
 
-	// Navigation properties
-	public User? User { get; set; }
-	public Channel? Channel { get; set; }
+    public int UserId { get; set; }
+
+    public int ChannelId { get; set; }
+
+    public string Text { get; set; } = null!;
+
+    public decimal Time { get; set; }
+
+	// Navigational Properties
+	[JsonIgnore]
+	public virtual User User { get; set; } = null!;
+
+	[JsonIgnore] 
+	public virtual Channel Channel { get; set; } = null!;
 }
