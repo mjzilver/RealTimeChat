@@ -129,8 +129,6 @@ public class ChannelCommandProcessor
 
 		if (channel != null && user != null)
 		{
-			Console.WriteLine($"Joining channel {channel.Name} with user {user.Name}");
-
 			_memoryStore.AddUserToChannel(channelId, user);
 			var users = _memoryStore.GetUsersInChannel(channelId);
 			// serialze users
@@ -149,7 +147,6 @@ public class ChannelCommandProcessor
 
 	public async Task LeaveChannel(int channelId, int userId)
 	{
-		Console.WriteLine($"Leaving channel {channelId} with user {userId}");
 		var channel = await _dbContext.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
 		var user = await _dbContext.Users.FindAsync(userId);
 
@@ -180,10 +177,6 @@ public class ChannelCommandProcessor
 			{
 				await _websocketSender.SendAsync(socket, response);
 			}
-		}
-		else
-		{
-			Console.WriteLine("Failed to leave channel");
 		}
 	}
 }

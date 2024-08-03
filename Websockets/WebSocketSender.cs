@@ -17,7 +17,6 @@ public class WebSocketSender
 
     public async Task SendAsync(WebSocket socket, string message)
 	{
-		Console.WriteLine("Sending message" + message);
 		if (socket.State == WebSocketState.Open)
 		{
 			var encodedMessage = Encoding.UTF8.GetBytes(message);

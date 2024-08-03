@@ -35,8 +35,6 @@ public class MessageCommandProcessor
 
 	public async Task BroadcastMessage(Message message)
 	{
-		Console.WriteLine(JsonSerializer.Serialize(message, _options));
-
 		message.User = await _dbContext.Users.FindAsync(message.UserId) ?? new User();
 		message.Channel = await _dbContext.Channels.FindAsync(message.ChannelId) ?? new Channel();
 
