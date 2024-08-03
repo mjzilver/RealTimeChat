@@ -1,42 +1,18 @@
-using B4mServer.Data;
-using B4mServer.Hubs;
-using Microsoft.EntityFrameworkCore;
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddControllers();
-builder.Services.AddSignalR();
-builder.Services.AddCors(options =>
+﻿namespace B4mServer;
+public class Program
 {
-	options.AddDefaultPolicy(builder =>
+	public static void Main(string[] args)
 	{
-		builder.AllowAnyHeader()
-			.AllowAnyMethod()
-			.SetIsOriginAllowed(_ => true)
-			.AllowCredentials();
-	});
-});
+		CreateHostBuilder(args).Build().Run();
+	}
 
-builder.Services.AddDbContext<ForumContext>(options =>
-{
-	options.UseSqlite("Data Source=forum.db");
-});
-builder.WebHost.UseUrls("http://localhost:5000");
-
-var app = builder.Build();
-
-// if development
-if (app.Environment.IsDevelopment())
-{
-	app.UseDeveloperExceptionPage();
+	public static IHostBuilder CreateHostBuilder(string[] args)
+	{
+		return Host.CreateDefaultBuilder(args)
+			.ConfigureWebHostDefaults(webBuilder =>
+			{
+				webBuilder.UseStartup<Startup>();
+				webBuilder.UseUrls("http://*:5000");
+			});
+	}
 }
-
-app.UseRouting();
-app.UseCors();
-
-app.MapControllers();
-app.MapHub<ChatHub>("/chatHub");
-
-app.Urls.Add("http://localhost:5000");
-
-app.Run();
