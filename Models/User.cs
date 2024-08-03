@@ -2,7 +2,6 @@
 using System.Text.Json.Serialization;
 
 namespace B4mServer.Models;
-
 public partial class User
 {
 	public int Id { get; set; }

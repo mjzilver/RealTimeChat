@@ -28,8 +28,8 @@ public record WebSocketMessage
 			Id = Id ?? 0,
 			Text = Text,
 			Time = Time,
-			UserId = User.Id ?? -1,
-			ChannelId = Channel.Id ?? -1
+			UserId = User?.Id ?? -1,
+			ChannelId = Channel?.Id ?? -1
 		};
 	}
 
@@ -42,8 +42,8 @@ public record WebSocketMessage
 			Time,
 			UserId,
 			ChannelId,
-			User = User.ToSerializable(),
-			Channel = Channel.ToSerializableWithoutMessages()
+			User = User?.ToSerializable(),
+			Channel = Channel?.ToSerializableWithoutMessages()
 		};
 	}
 }
