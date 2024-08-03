@@ -43,6 +43,8 @@ public class Startup
 			app.UseDeveloperExceptionPage();
 		}
 
+		dbContext.Database.Migrate();
+
 		app.UseWebSockets();
 		app.UseRouting();
 		app.UseEndpoints(endpoints =>

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using B4mServer.Models;
 using B4mServer.Data;
+using B4mServer.Validators;
 
 namespace B4mServer.Websockets;
 
@@ -62,7 +63,18 @@ public class ChannelCommandProcessor
 			return;
 		}
 
+		var channelValidation = ChannelValidator.ValidateNewChannel(channel);
+
+		Console.WriteLine(channelValidation.ErrorMessage);
+
+		if(!channelValidation.IsValid)
+		{
+			await _websocketSender.SendErrorAsync(socketId, channelValidation.ErrorMessage);
+			return;
+		}
+
 		channel.Owner = currentUser;
+		channel.Created = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
 		await _dbContext.Channels.AddAsync(channel);
 		await _dbContext.SaveChangesAsync();
@@ -108,12 +120,22 @@ public class ChannelCommandProcessor
 	public async Task DeleteChannel(int channelId, string socketId)
 	{
 		var channel = await _dbContext.Channels.FindAsync(channelId);
-		if (channel != null)
+		var owner = _memoryStore.GetUserBySocketId(socketId);
+		var currentUser = _memoryStore.GetUserBySocketId(socketId);
+
+		if (channel != null && currentUser != null)
 		{
+			if (owner == null || owner.Id != currentUser.Id)
+			{
+				await _websocketSender.SendErrorAsync(socketId, "You do not own this channel");
+				return;
+			}
+
+			var response = JsonSerializer.Serialize(new { command = "channelDeleted", channel = channel.ToDTO() }, _options);
+
 			_dbContext.Channels.Remove(channel);
 			await _dbContext.SaveChangesAsync();
 
-			var response = JsonSerializer.Serialize(new { command = "deleteChannel", channelId }, _options);
 			var socket = _memoryStore.GetSocketById(socketId);
 			if (socket != null)
 			{
@@ -154,23 +176,10 @@ public class ChannelCommandProcessor
 		{
 			_memoryStore.RemoveUserFromChannel(channelId, user);
 			var users = _memoryStore.GetUsersInChannel(channelId);
-			var wsUsers = users.Select(u => new WebSocketUser
-			{
-				Id = u.Id,
-				Name = u.Name,
-				Color = u.Color
-			}).ToList();
+			var wsUsers = users.Select(u => u.ToDTO()).ToList();
 
-			WebSocketChannel wsChannel = new()
-			{
-				Id = channel.Id,
-				Name = channel.Name,
-				Created = channel.Created,
-				Color = channel.Color,
-				Password = null, // don't send password to client
-				OwnerId = channel.OwnerId,
-				Users = wsUsers
-			};
+			WebSocketChannel wsChannel = channel.ToDTO();
+			wsChannel.Users = wsUsers;
 
 			var response = JsonSerializer.Serialize(new { command = "userLeftChannel", channel = wsChannel }, _options);
 			foreach (var socket in _memoryStore.GetAllSockets())

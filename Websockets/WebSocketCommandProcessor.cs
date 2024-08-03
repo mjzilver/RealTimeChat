@@ -36,7 +36,7 @@ public class WebSocketCommandProcessor
 			switch (command.Command)
 			{
 				case "broadcastMessage":
-					await _messageCommandProcessor.BroadcastMessage(command.Message!.ToModel());
+					await _messageCommandProcessor.BroadcastMessage(command.Message!.ToModel(), socketId);
 					break;
 				case "getMessages":
 					await _messageCommandProcessor.GetMessages(command.Channel?.Id ?? 0, socketId);
@@ -46,6 +46,9 @@ public class WebSocketCommandProcessor
 					break;
 				case "createChannel":
 					await _channelCommandProcessor.CreateChannel(command.Channel!.ToModel(), socketId);
+					break;
+				case "deleteChannel":
+					await _channelCommandProcessor.DeleteChannel(command.Channel!.Id ?? -1, socketId);
 					break;
 				case "updateChannel":
 					await _channelCommandProcessor.UpdateChannel(command.Channel!.ToModel(), socketId);

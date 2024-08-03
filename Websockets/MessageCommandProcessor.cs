@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using B4mServer.Models;
 using B4mServer.Data;
+using B4mServer.Validators;
 
 namespace B4mServer.Websockets;
 
@@ -33,7 +34,7 @@ public class MessageCommandProcessor
 		}
 	}
 
-	public async Task BroadcastMessage(Message message)
+	public async Task BroadcastMessage(Message message, string socketId)
 	{
 		message.User = await _dbContext.Users.FindAsync(message.UserId) ?? new User();
 		message.Channel = await _dbContext.Channels.FindAsync(message.ChannelId) ?? new Channel();
@@ -42,6 +43,16 @@ public class MessageCommandProcessor
 		{
 			return;
 		}
+
+		var validation = MessageValidator.ValidateNewMessage(message);
+
+		if(!validation.IsValid)
+		{
+			await _webSocketSender.SendErrorAsync(socketId, validation.ErrorMessage);
+			return;
+		}
+
+		message.Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
 		foreach (var socket in _memoryStore.GetAllSockets())
 		{

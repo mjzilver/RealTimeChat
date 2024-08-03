@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using B4mServer.Models;
 using B4mServer.Data;
+using B4mServer.Validators;
 
 
 namespace B4mServer.Websockets;
@@ -97,7 +98,15 @@ public class UserCommandProcessor
 		var existingUser = await _dbContext.Users.AnyAsync(u => u.Name == user.Name);
 		if (!existingUser)
 		{
+			var validation = UserValidator.ValidateNewUser(user);
+			if (!validation.IsValid)
+			{
+				await _webSocketSender.SendErrorAsync(socketId, validation.ErrorMessage);
+				return;
+			}
+
 			user.Password = HashPassword(user.Password!);
+			user.Joined = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
 			await _dbContext.Users.AddAsync(user);
 			await _dbContext.SaveChangesAsync();
@@ -129,6 +138,13 @@ public class UserCommandProcessor
 		if (_memoryStore.GetUserBySocketId(socketId)?.Id != user.Id)
 		{
 			await _webSocketSender.SendErrorAsync(socketId, "Unauthorized");
+			return;
+		}
+
+		var validation = UserValidator.ValidateUpdatedUser(user, existingUser);
+		if (!validation.IsValid)
+		{
+			await _webSocketSender.SendErrorAsync(socketId, validation.ErrorMessage);
 			return;
 		}
 
