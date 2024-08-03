@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using B4mServer.Models;
 using B4mServer.Data;
 
+
 namespace B4mServer.Websockets;
 
 public class UserCommandProcessor
@@ -21,9 +22,19 @@ public class UserCommandProcessor
 		_webSocketSender = webSocketSender;
 	}
 
+	public string HashPassword(string password)
+	{
+		return BCrypt.Net.BCrypt.HashPassword(password);
+	}
+
+	public bool VerifyPassword(string password, string hash)
+	{
+		return BCrypt.Net.BCrypt.Verify(password, hash);
+	}
+
 	public async Task GetUsers(string socketId)
 	{
-		var users = await _dbContext.Users.ToListAsync();
+		var users = await _dbContext.Users.Select(u => u.ToDTO()).ToListAsync();
 		var response = JsonSerializer.Serialize(new { command = "users", users }, _options);
 		var socket = _memoryStore.GetSocketById(socketId);
 		if (socket != null)
@@ -34,12 +45,20 @@ public class UserCommandProcessor
 
 	public async Task Login(User user, string socketId)
 	{
-		var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Name == user.Name && u.Password == user.Password);
+		var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Name == user.Name);
+
+
 		if (existingUser != null)
 		{
+			if (!VerifyPassword(user.Password!, existingUser.Password!))
+			{
+				await _webSocketSender.SendErrorAsync(socketId, "Invalid login credentials");
+				return;
+			}
+
 			_memoryStore.AddUser(socketId, existingUser);
 
-			var response = JsonSerializer.Serialize(new { command = "loginUser", user = existingUser }, _options);
+			var response = JsonSerializer.Serialize(new { command = "loginUser", user = existingUser.ToDTO() }, _options);
 			var socket = _memoryStore.GetSocketById(socketId);
 			if(socket != null)
 				await _webSocketSender.SendAsync(socket, response);
@@ -63,7 +82,7 @@ public class UserCommandProcessor
 				_memoryStore.RemoveUserFromChannel(channelId, user);
 				await _dbContext.SaveChangesAsync();
 
-				var response = JsonSerializer.Serialize(new { command = "logoutUser", user, channel }, _options);
+				var response = JsonSerializer.Serialize(new { command = "logoutUser", user = user.ToDTO(), channel }, _options);
 				_memoryStore.RemoveUser(socketId);
 				foreach (var socket in _memoryStore.GetAllSockets())
 				{
@@ -78,10 +97,12 @@ public class UserCommandProcessor
 		var existingUser = await _dbContext.Users.AnyAsync(u => u.Name == user.Name);
 		if (!existingUser)
 		{
+			user.Password = HashPassword(user.Password!);
+
 			await _dbContext.Users.AddAsync(user);
 			await _dbContext.SaveChangesAsync();
 
-			var response = JsonSerializer.Serialize(new { command = "registerUser", user }, _options);
+			var response = JsonSerializer.Serialize(new { command = "registerUser", user = user.ToDTO() }, _options);
 			_memoryStore.AddUser(socketId, user);
 			var socket = _memoryStore.GetSocketById(socketId);
 
@@ -115,7 +136,7 @@ public class UserCommandProcessor
 
 		await _dbContext.SaveChangesAsync();
 
-		var response = JsonSerializer.Serialize(new { command = "userUpdated", user = existingUser }, _options);
+		var response = JsonSerializer.Serialize(new { command = "userUpdated", user = existingUser.ToDTO() }, _options);
 		foreach (var socket in _memoryStore.GetAllSockets())
 		{
 			await _webSocketSender.SendAsync(socket, response);
