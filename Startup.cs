@@ -3,6 +3,8 @@ using B4mServer.Websockets;
 using Microsoft.AspNetCore.WebSockets;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace B4mServer;
 
@@ -14,7 +16,18 @@ public class Startup
 			options.UseSqlite("Data Source=app.db");
 		}, ServiceLifetime.Singleton);
 
+		services.AddSingleton(new JsonSerializerOptions
+		{
+			PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+			ReferenceHandler = ReferenceHandler.IgnoreCycles
+		});
+
 		services.AddSingleton<MemoryStore>();
+		services.AddSingleton<WebSocketSender>();
+		services.AddScoped<UserCommandProcessor>();
+		services.AddScoped<ChannelCommandProcessor>();
+		services.AddScoped<MessageCommandProcessor>();
+		services.AddScoped<WebSocketCommandProcessor>();
 
 		services.AddWebSockets(options =>
 		{
@@ -43,10 +56,13 @@ public class Startup
 			{
 				if (context.WebSockets.IsWebSocketRequest)
 				{
-					using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-					var webSocketHandler = new WebSocketHandler(context, webSocket, dbContext, 
-						context.RequestServices.GetRequiredService<MemoryStore>());
-					await webSocketHandler.Handle();
+					var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+					var commandProcessor = context.RequestServices.GetRequiredService<WebSocketCommandProcessor>();
+					var memoryStore = context.RequestServices.GetRequiredService<MemoryStore>();
+					var options = context.RequestServices.GetRequiredService<JsonSerializerOptions>();
+					var handler = new WebSocketHandler(context, webSocket, commandProcessor, 
+						memoryStore, options);
+					await handler.Handle();
 				}
 				else
 				{

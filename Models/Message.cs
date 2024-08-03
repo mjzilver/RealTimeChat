@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using B4mServer.Websockets;
+using System.Text.Json.Serialization;
 
 namespace B4mServer.Models;
 
@@ -13,4 +14,30 @@ public partial class Message
 	// Navigational Properties
 	public virtual User User { get; set; } = null!;
 	public virtual Channel Channel { get; set; } = null!;
+
+    public WebSocketMessage ToDTO()
+	{
+		return new WebSocketMessage
+		{
+			Id = Id,
+			Text = Text,
+			Time = Time,
+			UserId = UserId,
+			ChannelId = ChannelId,
+			User = User?.ToDTO(),
+			Channel = Channel?.ToDTO()
+		};
+	}
+
+	public WebSocketMessage ToMinimalDTO()
+	{
+		return new WebSocketMessage
+		{
+			Id = Id,
+			Text = Text,
+			Time = Time,
+			UserId = UserId,
+			ChannelId = ChannelId
+		};
+	}
 }

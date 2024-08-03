@@ -21,6 +21,11 @@ public class MemoryStore
 		_connectedSockets.TryRemove(socketId, out _);
 	}
 
+	public int GetChannelIdByUserId(int userId)
+	{
+		return _channelUsers.FirstOrDefault(c => c.Value.Any(u => u.Id == userId)).Key;
+	}
+
 	public WebSocket? GetSocketById(string socketId)
 	{
 		_connectedSockets.TryGetValue(socketId, out var socket);
@@ -74,6 +79,22 @@ public class MemoryStore
 		{
 			users.Remove(user);
 		}
+	}
+
+	public void RemoveUserBySocketId(string socketId)
+	{
+		var user = GetUserBySocketId(socketId);
+		if (user != null)
+		{
+			RemoveUserFromChannel(GetChannelIdByUserId(user.Id), user);
+			RemoveUser(socketId);
+		}
+	}
+
+	public User? TryGetUserBySocketID(string socketId)
+	{
+		_connectedUsers.TryGetValue(socketId, out var user);
+		return user;
 	}
 
 	public List<User> GetUsersInChannel(int channelId)

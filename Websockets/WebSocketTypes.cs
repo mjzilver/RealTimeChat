@@ -18,8 +18,8 @@ public record WebSocketMessage
 	public int UserId { get; set; }
 	public int ChannelId { get; set; }
 
-	public required WebSocketUser User { get; set; }
-	public required WebSocketChannel Channel { get; set; }
+	public WebSocketUser? User { get; set; } 
+	public WebSocketChannel? Channel { get; set; }
 
 	public Message ToModel()
 	{

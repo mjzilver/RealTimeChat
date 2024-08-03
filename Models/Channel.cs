@@ -1,4 +1,5 @@
-﻿using System;
+﻿using B4mServer.Websockets;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -25,14 +26,16 @@ public partial class Channel
 	[JsonIgnore]
 	public virtual ICollection<Message> Messages { get; set; } = [];
 
-	public Channel GetSerialized() 	{
-		return new Channel
+	public WebSocketChannel ToDTO()
+	{
+		return new WebSocketChannel
 		{
 			Id = Id,
 			Name = Name,
 			Created = Created,
 			Color = Color,
-			OwnerId = OwnerId
+			OwnerId = OwnerId,
+			Messages = Messages.Select(m => m.ToMinimalDTO()).ToList()
 		};
 	}
 }

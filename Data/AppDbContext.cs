@@ -1,6 +1,8 @@
 ﻿using B4mServer.Models;
 using Microsoft.EntityFrameworkCore;
 
+namespace B4mServer.Data;
+
 public class AppDbContext : DbContext
 {
 	public DbSet<User> Users { get; set; }

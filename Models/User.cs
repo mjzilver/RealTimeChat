@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using B4mServer.Websockets;
+using System.Text.Json.Serialization;
 
 namespace B4mServer.Models;
 
@@ -17,14 +18,16 @@ public partial class User
 	[JsonIgnore]
 	public virtual ICollection<Channel> OwnedChannels { get; set; } = [];
 
-	public User GetSerialized()
+	public WebSocketUser ToDTO()
 	{
-		return new User
+		return new WebSocketUser
 		{
 			Id = Id,
 			Name = Name,
+			Password = null, // Password is not sent to the client
+			Color = Color,
 			Joined = Joined,
-			Color = Color
+			ExistingUser = true
 		};
 	}
 }
