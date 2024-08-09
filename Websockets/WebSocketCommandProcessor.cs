@@ -82,7 +82,6 @@ public class WebSocketCommandProcessor
 		catch (Exception ex)
 		{
 			Console.WriteLine($"Error: {ex.Message}");
-			await _webSocketSender.SendErrorAsync(socketId, ex.Message);
 		}
 	}
 

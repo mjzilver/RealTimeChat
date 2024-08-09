@@ -26,29 +26,41 @@ public class WebSocketHandler
 	public async Task Handle()
 	{
 		string socketId = Guid.NewGuid().ToString();
-		_memoryStore.AddSocketConnection(socketId, _webSocket);
 
-		while (_webSocket.State == WebSocketState.Open)
+		try
 		{
-			var buffer = new byte[1024 * 4];
-			var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+			_memoryStore.AddSocketConnection(socketId, _webSocket);
 
-			if (result.MessageType == WebSocketMessageType.Text)
+			while (_webSocket.State == WebSocketState.Open)
 			{
-				var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
-				var command = JsonSerializer.Deserialize<WebSocketCommand>(json, _options);
+				var buffer = new byte[1024 * 4];
+				var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
-				if (command != null)
+				if (result.MessageType == WebSocketMessageType.Text)
 				{
-					await _commandProcessor.ProcessCommandAsync(command, socketId);
+					var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
+					var command = JsonSerializer.Deserialize<WebSocketCommand>(json, _options);
+
+					if (command != null)
+					{
+						await _commandProcessor.ProcessCommandAsync(command, socketId);
+					}
+				}
+				else if (result.MessageType == WebSocketMessageType.Close)
+				{
+					_commandProcessor.UserDisconnected(socketId);
+
+					await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by server", CancellationToken.None);
 				}
 			}
-			else if (result.MessageType == WebSocketMessageType.Close)
-			{
-				_commandProcessor.UserDisconnected(socketId);
-				
-				await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by server", CancellationToken.None);
-			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error: {ex.Message}");
+		}
+		finally
+		{
+			_memoryStore.RemoveSocketConnection(socketId);
 		}
 	}
 }
