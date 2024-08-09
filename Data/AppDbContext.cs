@@ -24,6 +24,12 @@ public class AppDbContext : DbContext
 			.Property(u => u.Password)
 			.HasMaxLength(200);
 
+		modelBuilder.Entity<User>()
+			.HasMany(u => u.OwnedChannels)
+			.WithOne(c => c.Owner)
+			.HasForeignKey(c => c.OwnerId)
+			.OnDelete(DeleteBehavior.Restrict);
+
 		// Message entity configuration
 		modelBuilder.Entity<Message>()
 			.HasOne(m => m.User)
@@ -44,7 +50,8 @@ public class AppDbContext : DbContext
 		// Channel entity configuration
 		modelBuilder.Entity<Channel>()
 			.HasOne(c => c.Owner)
-			.WithMany()
+			.WithMany(u => u.OwnedChannels)
+			.HasForeignKey(c => c.OwnerId)
 			.OnDelete(DeleteBehavior.Restrict);
 
 		modelBuilder.Entity<Channel>()

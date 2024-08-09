@@ -13,12 +13,12 @@ public partial class Channel
 	[JsonIgnore]
 	public string? Password { get; set; }
 
-	// foreign key
-	public int OwnerId { get; set; }
+	// foreign key for Owner
+	public int? OwnerId { get; set; }
 
 	// Navigational Properties
 	[JsonIgnore]
-	[ForeignKey("OwnerId")]
+	[ForeignKey(nameof(OwnerId))]
 	public virtual User? Owner { get; set; }
 	[JsonIgnore]
 	public virtual ICollection<Message> Messages { get; set; } = [];

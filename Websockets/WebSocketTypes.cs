@@ -32,20 +32,6 @@ public record WebSocketMessage
 			ChannelId = Channel?.Id ?? -1
 		};
 	}
-
-	public object ToSerializable()
-	{
-		return new
-		{
-			Id,
-			Text,
-			Time,
-			UserId,
-			ChannelId,
-			User = User?.ToSerializable(),
-			Channel = Channel?.ToSerializableWithoutMessages()
-		};
-	}
 }
 
 public record WebSocketUser
@@ -68,18 +54,6 @@ public record WebSocketUser
 			Joined = Joined
 		};
 	}
-
-	public object ToSerializable()
-	{
-		return new
-		{
-			Id,
-			Name,
-			Color,
-			Joined,
-			ExistingUser
-		};
-	}
 }
 
 public record WebSocketChannel
@@ -89,7 +63,7 @@ public record WebSocketChannel
 	public long Created { get; set; }
 	public required string Color { get; set; }
 	public string? Password { get; set; }
-	public int OwnerId { get; set; }
+	public int? OwnerId { get; set; }
 	public int? UserId { get; set; }
 	public int? ChannelId { get; set; }
 	public ICollection<WebSocketUser>? Users { get; set; } = [];
@@ -105,35 +79,6 @@ public record WebSocketChannel
 			Color = Color,
 			Password = Password,
 			OwnerId = OwnerId
-		};
-	}
-
-	public object ToSerializable()
-	{
-		return new
-		{
-			Id,
-			Name,
-			Created,
-			Color,
-			Password,
-			OwnerId,
-			Users = Users?.Select(u => u.ToSerializable()),
-			Messages = Messages?.Select(m => m.ToSerializable())
-		};
-	}
-
-	public object ToSerializableWithoutMessages()
-	{
-		return new
-		{
-			Id,
-			Name,
-			Created,
-			Color,
-			Password,
-			OwnerId,
-			Users = Users?.Select(u => u.ToSerializable())
 		};
 	}
 }

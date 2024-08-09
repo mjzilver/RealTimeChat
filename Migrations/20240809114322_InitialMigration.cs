@@ -36,8 +36,7 @@ namespace B4mServer.Migrations
                     Created = table.Column<long>(type: "INTEGER", nullable: false),
                     Color = table.Column<string>(type: "TEXT", nullable: false),
                     Password = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    OwnerId = table.Column<int>(type: "INTEGER", nullable: false),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: true)
+                    OwnerId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -48,11 +47,6 @@ namespace B4mServer.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Channels_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -87,11 +81,6 @@ namespace B4mServer.Migrations
                 name: "IX_Channels_OwnerId",
                 table: "Channels",
                 column: "OwnerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Channels_UserId",
-                table: "Channels",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Messages_ChannelId",
