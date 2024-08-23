@@ -3,27 +3,16 @@ using Microsoft.EntityFrameworkCore;
 using B4mServer.Models;
 using B4mServer.Data;
 using B4mServer.Validators;
+using B4mServer.Websockets.Interfaces;
 
 namespace B4mServer.Websockets;
 
-public class ChannelCommandProcessor
+public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memoryStore,
+    IWebSocketSender webSocketSender, JsonSerializerOptions options) : IChannelCommandProcessor
 {
-	private readonly AppDbContext _dbContext;
-	private readonly MemoryStore _memoryStore;
-	private readonly JsonSerializerOptions _options;
-	private readonly WebSocketSender _websocketSender;
-	public ChannelCommandProcessor(AppDbContext dbContext, MemoryStore memoryStore,
-		WebSocketSender webSocketSender, JsonSerializerOptions options)
+    public async Task GetChannels(string socketId)
 	{
-		_dbContext = dbContext;
-		_memoryStore = memoryStore;
-		_options = options;
-		_websocketSender = webSocketSender;
-	}
-
-	public async Task GetChannels(string socketId)
-	{
-		var channels = await _dbContext.Channels.Select(c => new WebSocketChannel
+		var channels = await dbContext.Channels.Select(c => new WebSocketChannel
 		{
 			Id = c.Id,
 			Name = c.Name,
@@ -36,7 +25,7 @@ public class ChannelCommandProcessor
 		// add users to channels
 		foreach (var channel in channels)
 		{
-			var users = _memoryStore.GetUsersInChannel(channel.Id ?? -1);
+			var users = memoryStore.GetUsersInChannel(channel.Id ?? -1);
 			channel.Users = users.Select(u => new WebSocketUser
 			{
 				Id = u.Id,
@@ -45,21 +34,21 @@ public class ChannelCommandProcessor
 			}).ToList();
 		}
 
-		var response = JsonSerializer.Serialize(new { command = "channels", channels }, _options);
-		var socket = _memoryStore.GetSocketById(socketId);
+		var response = JsonSerializer.Serialize(new { command = "channels", channels }, options);
+		var socket = memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{
-			await _websocketSender.SendAsync(socket, response);
+			await webSocketSender.SendAsync(socket, response);
 		}
 	}
 
 	public async Task CreateChannel(Channel channel, string socketId)
 	{
-		var currentUser = _memoryStore.GetUserBySocketId(socketId);
+		var currentUser = memoryStore.GetUserBySocketId(socketId);
 
 		if (currentUser == null)
 		{
-			await _websocketSender.SendErrorAsync(socketId, "Unauthorized");
+			await webSocketSender.SendErrorAsync(socketId, "Unauthorized");
 			return;
 		}
 
@@ -69,36 +58,36 @@ public class ChannelCommandProcessor
 
 		if(!channelValidation.IsValid)
 		{
-			await _websocketSender.SendErrorAsync(socketId, channelValidation.ErrorMessage);
+			await webSocketSender.SendErrorAsync(socketId, channelValidation.ErrorMessage);
 			return;
 		}
 
 		channel.Owner = currentUser;
 		channel.Created = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-		await _dbContext.Channels.AddAsync(channel);
-		await _dbContext.SaveChangesAsync();
+		await dbContext.Channels.AddAsync(channel);
+		await dbContext.SaveChangesAsync();
 
-		var response = JsonSerializer.Serialize(new { command = "channelCreated", channel }, _options);
-		foreach (var socket in _memoryStore.GetAllSockets())
+		var response = JsonSerializer.Serialize(new { command = "channelCreated", channel }, options);
+		foreach (var socket in memoryStore.GetAllSockets())
 		{
-			await _websocketSender.SendAsync(socket, response);
+			await webSocketSender.SendAsync(socket, response);
 		}
 	}
 	public async Task UpdateChannel(Channel channel, string socketId)
 	{
-		var currentChannel = _dbContext.Channels.FirstOrDefault(c => c.Id == channel.Id);
-		var owner = _memoryStore.GetUserBySocketId(socketId);
+		var currentChannel = await dbContext.Channels.FirstOrDefaultAsync(c => c.Id == channel.Id);
+		var owner = memoryStore.GetUserBySocketId(socketId);
 
 		if (currentChannel == null)
 		{
-			await _websocketSender.SendErrorAsync(socketId, "Channel does not exit");
+			await webSocketSender.SendErrorAsync(socketId, "Channel does not exit");
 			return;
 		}
 
 		if (owner == null || owner.Id != currentChannel.Owner!.Id)
 		{
-			await _websocketSender.SendErrorAsync(socketId, "You do not own this channel");
+			await webSocketSender.SendErrorAsync(socketId, "You do not own this channel");
 			return;
 		}
 
@@ -108,83 +97,83 @@ public class ChannelCommandProcessor
 		currentChannel.Owner = owner;
 		currentChannel.OwnerId = channel.OwnerId;
 
-		await _dbContext.SaveChangesAsync();
+		await dbContext.SaveChangesAsync();
 
-		var response = JsonSerializer.Serialize(new { command = "channelUpdated", channel = currentChannel }, _options);
-		foreach (var socket in _memoryStore.GetAllSockets())
+		var response = JsonSerializer.Serialize(new { command = "channelUpdated", channel = currentChannel }, options);
+		foreach (var socket in memoryStore.GetAllSockets())
 		{
-			await _websocketSender.SendAsync(socket, response);
+			await webSocketSender.SendAsync(socket, response);
 		}
 	}
 
 	public async Task DeleteChannel(int channelId, string socketId)
 	{
-		var channel = await _dbContext.Channels.FindAsync(channelId);
-		var owner = _memoryStore.GetUserBySocketId(socketId);
-		var currentUser = _memoryStore.GetUserBySocketId(socketId);
+		var channel = await dbContext.Channels.FindAsync(channelId);
+		var owner = memoryStore.GetUserBySocketId(socketId);
+		var currentUser = memoryStore.GetUserBySocketId(socketId);
 
 		if (channel != null && currentUser != null)
 		{
 			if (owner == null || owner.Id != currentUser.Id)
 			{
-				await _websocketSender.SendErrorAsync(socketId, "You do not own this channel");
+				await webSocketSender.SendErrorAsync(socketId, "You do not own this channel");
 				return;
 			}
 
-			var response = JsonSerializer.Serialize(new { command = "channelDeleted", channel = channel.ToDTO() }, _options);
+			var response = JsonSerializer.Serialize(new { command = "channelDeleted", channel = channel.ToDTO() }, options);
 
-			_dbContext.Channels.Remove(channel);
-			await _dbContext.SaveChangesAsync();
+			dbContext.Channels.Remove(channel);
+			await dbContext.SaveChangesAsync();
 
-			var socket = _memoryStore.GetSocketById(socketId);
+			var socket = memoryStore.GetSocketById(socketId);
 			if (socket != null)
 			{
-				await _websocketSender.SendAsync(socket, response);
+				await webSocketSender.SendAsync(socket, response);
 			}
 		}
 	}
 
 	public async Task JoinChannel(int channelId, int userId)
 	{
-		var channel = await _dbContext.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
-		var user = await _dbContext.Users.FindAsync(userId);
+		var channel = await dbContext.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
+		var user = await dbContext.Users.FindAsync(userId);
 
 		if (channel != null && user != null)
 		{
-			_memoryStore.AddUserToChannel(channelId, user);
-			var users = _memoryStore.GetUsersInChannel(channelId);
+			memoryStore.AddUserToChannel(channelId, user);
+			var users = memoryStore.GetUsersInChannel(channelId);
 			// serialze users
 			var wsUsers = users.Select(u => u.ToDTO()).ToList();
 
 			WebSocketChannel wsChannel = channel.ToDTO();
 			wsChannel.Users = wsUsers;
 
-			var response = JsonSerializer.Serialize(new { command = "userJoinedChannel", channel = wsChannel }, _options);
-			foreach (var socket in _memoryStore.GetAllSockets())
+			var response = JsonSerializer.Serialize(new { command = "userJoinedChannel", channel = wsChannel }, options);
+			foreach (var socket in memoryStore.GetAllSockets())
 			{
-				await _websocketSender.SendAsync(socket, response);
+				await webSocketSender.SendAsync(socket, response);
 			}
 		}
 	}
 
 	public async Task LeaveChannel(int channelId, int userId)
 	{
-		var channel = await _dbContext.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
-		var user = await _dbContext.Users.FindAsync(userId);
+		var channel = await dbContext.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
+		var user = await dbContext.Users.FindAsync(userId);
 
 		if (channel != null && user != null)
 		{
-			_memoryStore.RemoveUserFromChannel(channelId, user);
-			var users = _memoryStore.GetUsersInChannel(channelId);
+			memoryStore.RemoveUserFromChannel(channelId, user);
+			var users = memoryStore.GetUsersInChannel(channelId);
 			var wsUsers = users.Select(u => u.ToDTO()).ToList();
 
 			WebSocketChannel wsChannel = channel.ToDTO();
 			wsChannel.Users = wsUsers;
 
-			var response = JsonSerializer.Serialize(new { command = "userLeftChannel", channel = wsChannel }, _options);
-			foreach (var socket in _memoryStore.GetAllSockets())
+			var response = JsonSerializer.Serialize(new { command = "userLeftChannel", channel = wsChannel }, options);
+			foreach (var socket in memoryStore.GetAllSockets())
 			{
-				await _websocketSender.SendAsync(socket, response);
+				await webSocketSender.SendAsync(socket, response);
 			}
 		}
 	}

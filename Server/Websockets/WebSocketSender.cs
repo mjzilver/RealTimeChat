@@ -2,18 +2,14 @@
 using System.Text;
 using System.Text.Json;
 using B4mServer.Data;
+using B4mServer.Websockets.Interfaces;
 
 namespace B4mServer.Websockets;
 
-public class WebSocketSender
+public class WebSocketSender(IMemoryStore memoryStore, JsonSerializerOptions options) : IWebSocketSender
 {
-	private readonly MemoryStore _memoryStore;
-	private readonly JsonSerializerOptions _options;
-    public WebSocketSender(MemoryStore memoryStore, JsonSerializerOptions options)
-    {
-        _memoryStore = memoryStore;
-		_options = options;
-    }
+	private readonly IMemoryStore _memoryStore = memoryStore;
+	private readonly JsonSerializerOptions _options = options;
 
     public async Task SendAsync(WebSocket socket, string message)
 	{

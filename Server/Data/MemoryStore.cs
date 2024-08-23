@@ -4,7 +4,7 @@ using System.Net.WebSockets;
 
 namespace B4mServer.Data;
 
-public class MemoryStore
+public class MemoryStore : IMemoryStore
 {
 	private readonly ConcurrentDictionary<string, WebSocket> _connectedSockets = new();
 	private readonly ConcurrentDictionary<string, User> _connectedUsers = new();
@@ -22,7 +22,7 @@ public class MemoryStore
 
 	public int GetChannelIdByUserId(int userId)
 	{
-		return _channelUsers.FirstOrDefault(c => c.Value.Any(u => u.Id == userId)).Key;
+		return _channelUsers.FirstOrDefault(c => c.Value.Exists(u => u.Id == userId)).Key;
 	}
 
 	public WebSocket? GetSocketById(string socketId)
@@ -68,7 +68,7 @@ public class MemoryStore
 		}
 		else
 		{
-			_channelUsers[channelId] = new List<User> { user };
+			_channelUsers[channelId] = [user];
 		}
 	}
 
@@ -90,15 +90,9 @@ public class MemoryStore
 		}
 	}
 
-	public User? TryGetUserBySocketID(string socketId)
-	{
-		_connectedUsers.TryGetValue(socketId, out var user);
-		return user;
-	}
-
 	public List<User> GetUsersInChannel(int channelId)
 	{
 		_channelUsers.TryGetValue(channelId, out var users);
-		return users ?? new List<User>();
+		return users ?? [];
 	}
 }
