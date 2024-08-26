@@ -1,8 +1,10 @@
 ﻿using B4mServer.Data;
 using B4mServer.Websockets;
+using B4mServer.Websockets.Interfaces;
 using Microsoft.AspNetCore.WebSockets;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -12,7 +14,8 @@ public class Startup
 {
 	public void ConfigureServices(IServiceCollection services)
 	{
-		services.AddDbContext<AppDbContext>(options => {
+		services.AddDbContext<AppDbContext>(options =>
+		{
 			options.UseSqlite("Data Source=app.db");
 		}, ServiceLifetime.Singleton);
 
@@ -22,12 +25,14 @@ public class Startup
 			ReferenceHandler = ReferenceHandler.IgnoreCycles
 		});
 
-		services.AddSingleton<MemoryStore>();
-		services.AddSingleton<WebSocketSender>();
-		services.AddScoped<UserCommandProcessor>();
-		services.AddScoped<ChannelCommandProcessor>();
-		services.AddScoped<MessageCommandProcessor>();
-		services.AddScoped<WebSocketCommandProcessor>();
+		// Add services
+		services.AddSingleton<IMemoryStore, MemoryStore>();
+		services.AddSingleton<IWebSocketSender, WebSocketSender>();
+		// Command processors
+		services.AddScoped<IUserCommandProcessor, UserCommandProcessor>();
+		services.AddScoped<IChannelCommandProcessor, ChannelCommandProcessor>();
+		services.AddScoped<IMessageCommandProcessor, MessageCommandProcessor>();
+		services.AddScoped<IWebSocketCommandProcessor, WebSocketCommandProcessor>();
 
 		services.AddWebSockets(options =>
 		{
@@ -58,12 +63,12 @@ public class Startup
 			{
 				if (context.WebSockets.IsWebSocketRequest)
 				{
-					var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-					var commandProcessor = context.RequestServices.GetRequiredService<WebSocketCommandProcessor>();
-					var memoryStore = context.RequestServices.GetRequiredService<MemoryStore>();
-					var options = context.RequestServices.GetRequiredService<JsonSerializerOptions>();
-					var handler = new WebSocketHandler(context, webSocket, commandProcessor, 
-						memoryStore, options);
+					WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+					IWebSocketCommandProcessor commandProcessor = context.RequestServices.GetRequiredService<IWebSocketCommandProcessor>();
+					IMemoryStore memoryStore = context.RequestServices.GetRequiredService<IMemoryStore>();
+					JsonSerializerOptions options = context.RequestServices.GetRequiredService<JsonSerializerOptions>();
+
+					WebSocketHandler handler = new(webSocket, commandProcessor, memoryStore, options);
 					await handler.Handle();
 				}
 				else

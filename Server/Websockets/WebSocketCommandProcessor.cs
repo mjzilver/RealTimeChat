@@ -1,35 +1,22 @@
 ﻿using System.Text.Json;
 using B4mServer.Data;
+using B4mServer.Websockets.Interfaces;
 
 namespace B4mServer.Websockets;
 
-public class WebSocketCommandProcessor
+public class WebSocketCommandProcessor(
+	IUserCommandProcessor userCommandProcessor,
+	IChannelCommandProcessor channelCommandProcessor,
+	IMessageCommandProcessor messageCommandProcessor)
+	: IWebSocketCommandProcessor
 {
-	private readonly UserCommandProcessor _userCommandProcessor;
-	private readonly ChannelCommandProcessor _channelCommandProcessor;
-	private readonly MessageCommandProcessor _messageCommandProcessor;
-	private readonly MemoryStore _memoryStore;
-	private readonly WebSocketSender _webSocketSender;
-	private readonly JsonSerializerOptions _options;
-
-	public WebSocketCommandProcessor(UserCommandProcessor userCommandProcessor, 
-		ChannelCommandProcessor channelCommandProcessor, 
-		MessageCommandProcessor messageCommandProcessor,
-		WebSocketSender webSocketSender,
-		MemoryStore memoryStore,
-		JsonSerializerOptions options)
-	{
-		_userCommandProcessor = userCommandProcessor;
-		_channelCommandProcessor = channelCommandProcessor;
-		_messageCommandProcessor = messageCommandProcessor;
-		_memoryStore = memoryStore;
-		_webSocketSender = webSocketSender;
-		_options = options;
-	}
+	private readonly IUserCommandProcessor _userCommandProcessor = userCommandProcessor;
+	private readonly IChannelCommandProcessor _channelCommandProcessor = channelCommandProcessor;
+	private readonly IMessageCommandProcessor _messageCommandProcessor = messageCommandProcessor;
 
 	public async Task ProcessCommandAsync(WebSocketCommand command, string socketId)
 	{
-		Console.WriteLine($"Command: {command.Command}");	
+		Console.WriteLine($"Command: {command.Command}");
 
 		try
 		{
@@ -85,7 +72,7 @@ public class WebSocketCommandProcessor
 		}
 	}
 
-	internal async void UserDisconnected(string socketId)
+	public async void UserDisconnected(string socketId)
 	{
 		await _userCommandProcessor.Logout(socketId);
 	}

@@ -3,17 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace B4mServer.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
 	public DbSet<User> Users { get; set; }
 	public DbSet<Message> Messages { get; set; }
 	public DbSet<Channel> Channels { get; set; }
 
-	public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
-	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
-
-	protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
 		// User entity configuration
 		modelBuilder.Entity<User>()
