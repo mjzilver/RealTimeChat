@@ -1,5 +1,5 @@
 ﻿namespace B4mServer;
-public class Program
+public static class Program
 {
 	public static void Main(string[] args)
 	{
@@ -9,7 +9,7 @@ public class Program
 	public static IHostBuilder CreateHostBuilder(string[] args)
 	{
 		return Host.CreateDefaultBuilder(args)
-			.ConfigureWebHostDefaults(webBuilder =>
+			.ConfigureWebHostDefaults(static (webBuilder) =>
 			{
 				webBuilder.UseStartup<Startup>();
 				webBuilder.UseUrls("http://*:5000");
