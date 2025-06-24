@@ -16,14 +16,12 @@ export class ChannelService {
 
 	private channels: Channel[] = [];
 
-	// Parse and emit channels
 	parseChannels(data: SocketChannel[]): Channel[] {
 		this.channels = data.map(item => new Channel(item.id, item.name, item.color, item.created, item.ownerId, item.password));
 		this.channelSubject.next(this.channels);
 		return this.channels;
 	}
 
-	// update or add a channel
 	updateChannel(data: SocketChannel): void {
 		const channel = this.channels.find(c => c.id === data.id);
 		if (channel) {
@@ -37,7 +35,6 @@ export class ChannelService {
 		}
 	}
 
-	// Update the users in 1 channel
 	updateChannelUsers(data: SocketResponse): void {
 		const channel = this.channels.find(c => c.id === data.channel?.id);
 		if (channel && data.channel?.users) {

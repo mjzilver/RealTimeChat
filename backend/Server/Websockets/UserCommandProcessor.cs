@@ -1,17 +1,18 @@
 ﻿using System.Text.Json;
+
 using Microsoft.EntityFrameworkCore;
-using B4mServer.Models;
-using B4mServer.Data;
-using B4mServer.Validators;
-using B4mServer.Websockets.Interfaces;
 
+using RealTimeChatServer.Data;
+using RealTimeChatServer.Models;
+using RealTimeChatServer.Validators;
+using RealTimeChatServer.Websockets.Interfaces;
 
-namespace B4mServer.Websockets;
+namespace RealTimeChatServer.Websockets;
 
 public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memoryStore,
-    IWebSocketSender webSocketSender, JsonSerializerOptions options) : IUserCommandProcessor
+	IWebSocketSender webSocketSender, JsonSerializerOptions options) : IUserCommandProcessor
 {
-    public string HashPassword(string password)
+	public string HashPassword(string password)
 	{
 		return BCrypt.Net.BCrypt.HashPassword(password);
 	}
@@ -23,9 +24,9 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 
 	public async Task GetUsers(string socketId)
 	{
-		var users = await dbContext.Users.Select(u => u.ToDTO()).ToListAsync();
+		List<WebSocketUser> users = await dbContext.Users.Select(u => u.ToDTO()).ToListAsync();
 		var response = JsonSerializer.Serialize(new { command = "users", users }, options);
-		var socket = memoryStore.GetSocketById(socketId);
+		System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{
 			await webSocketSender.SendAsync(socket, response);
@@ -34,7 +35,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 
 	public async Task Login(User user, string socketId)
 	{
-		var existingUser = await dbContext.Users.FirstOrDefaultAsync(u => u.Name == user.Name);
+		User? existingUser = await dbContext.Users.FirstOrDefaultAsync(u => u.Name == user.Name);
 
 
 		if (existingUser != null)
@@ -48,8 +49,8 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 			memoryStore.AddUser(socketId, existingUser);
 
 			var response = JsonSerializer.Serialize(new { command = "loginUser", user = existingUser.ToDTO() }, options);
-			var socket = memoryStore.GetSocketById(socketId);
-			if(socket != null)
+			System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
+			if (socket != null)
 				await webSocketSender.SendAsync(socket, response);
 		}
 		else
@@ -60,12 +61,12 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 
 	public async Task Logout(string socketId)
 	{
-		var user = memoryStore.GetUserBySocketId(socketId);
+		User? user = memoryStore.GetUserBySocketId(socketId);
 		if (user != null)
 		{
 			var channelId = memoryStore.GetChannelIdByUserId(user.Id);
 
-			var channel = await dbContext.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
+			Channel? channel = await dbContext.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
 			if (channel != null)
 			{
 				memoryStore.RemoveUserFromChannel(channelId, user);
@@ -73,7 +74,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 
 				var response = JsonSerializer.Serialize(new { command = "logoutUser", user = user.ToDTO(), channel }, options);
 				memoryStore.RemoveUser(socketId);
-				foreach (var socket in memoryStore.GetAllSockets())
+				foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
 				{
 					await webSocketSender.SendAsync(socket, response);
 				}
@@ -86,7 +87,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 		var existingUser = await dbContext.Users.AnyAsync(u => u.Name == user.Name);
 		if (!existingUser)
 		{
-			var validation = UserValidator.ValidateNewUser(user);
+			(bool IsValid, string ErrorMessage) validation = UserValidator.ValidateNewUser(user);
 			if (!validation.IsValid)
 			{
 				await webSocketSender.SendErrorAsync(socketId, validation.ErrorMessage);
@@ -101,7 +102,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 
 			var response = JsonSerializer.Serialize(new { command = "registerUser", user = user.ToDTO() }, options);
 			memoryStore.AddUser(socketId, user);
-			var socket = memoryStore.GetSocketById(socketId);
+			System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
 
 			if (socket == null) return;
 
@@ -116,7 +117,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 
 	public async Task UpdateUser(User user, string socketId)
 	{
-		var existingUser = await dbContext.Users.FindAsync(user.Id);
+		User? existingUser = await dbContext.Users.FindAsync(user.Id);
 		if (existingUser == null)
 		{
 			await webSocketSender.SendErrorAsync(socketId, "User not found");
@@ -129,7 +130,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 			return;
 		}
 
-		var validation = UserValidator.ValidateUpdatedUser(user, existingUser);
+		(bool IsValid, string ErrorMessage) validation = UserValidator.ValidateUpdatedUser(user, existingUser);
 		if (!validation.IsValid)
 		{
 			await webSocketSender.SendErrorAsync(socketId, validation.ErrorMessage);
@@ -141,7 +142,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 		await dbContext.SaveChangesAsync();
 
 		var response = JsonSerializer.Serialize(new { command = "userUpdated", user = existingUser.ToDTO() }, options);
-		foreach (var socket in memoryStore.GetAllSockets())
+		foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
 		{
 			await webSocketSender.SendAsync(socket, response);
 		}

@@ -16,7 +16,6 @@ export class MessageService {
 	resetMessages$ = this.resetMessagesSubject.asObservable();
 
 	parseMessages(data: SocketMessage[], channels: Channel[]): void {
-		// empty messages array
 		this.resetMessagesSubject.next();
 
 		data.forEach((item: SocketMessage) => {

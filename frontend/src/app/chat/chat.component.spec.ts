@@ -94,7 +94,6 @@ describe('ChatComponent', () => {
 		const mockMessage = new Message(mockUser, 'Hello', Date.now(), mockChannel);
 		messageService.emitMessage(mockMessage);
 
-		// expect scroll to be higher than 1 (scrolled more than 0)
 		expect(component['messageContainer'].nativeElement.scrollHeight).toBeGreaterThan(1);
 	});
 

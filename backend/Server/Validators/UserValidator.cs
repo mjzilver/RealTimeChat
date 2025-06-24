@@ -1,12 +1,12 @@
-﻿using B4mServer.Models;
+﻿using RealTimeChatServer.Models;
 
-namespace B4mServer.Validators;
+namespace RealTimeChatServer.Validators;
 
 public class UserValidator
 {
 	public static (bool IsValid, string ErrorMessage) ValidateNewUser(User user)
 	{
-		var nameResult = SharedValidator.ValidateName(user.Name);
+		(bool IsValid, string ErrorMessage) nameResult = SharedValidator.ValidateName(user.Name);
 		if (!nameResult.IsValid)
 		{
 			return nameResult;
@@ -17,7 +17,7 @@ public class UserValidator
 			return (false, "Password cannot be null");
 		}
 
-		var passwordResult = SharedValidator.ValidatePassword(user.Password);
+		(bool IsValid, string ErrorMessage) passwordResult = SharedValidator.ValidatePassword(user.Password);
 
 		if (!passwordResult.IsValid)
 		{
@@ -29,7 +29,6 @@ public class UserValidator
 
 	public static (bool IsValid, string ErrorMessage) ValidateUpdatedUser(User user, User oldUser)
 	{
-		// not allowed to change id, name
 		if (user.Id != oldUser.Id || user.Name != oldUser.Name)
 		{
 			return (false, "User Name cannot be changed.");

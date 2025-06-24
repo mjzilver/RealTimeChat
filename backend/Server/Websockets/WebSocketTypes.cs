@@ -1,6 +1,6 @@
-﻿using B4mServer.Models;
+﻿using RealTimeChatServer.Models;
 
-namespace B4mServer.Websockets;
+namespace RealTimeChatServer.Websockets;
 
 public record WebSocketCommand
 {
@@ -18,7 +18,7 @@ public record WebSocketMessage
 	public int UserId { get; set; }
 	public int ChannelId { get; set; }
 
-	public WebSocketUser? User { get; set; } 
+	public WebSocketUser? User { get; set; }
 	public WebSocketChannel? Channel { get; set; }
 
 	public Message ToModel()

@@ -1,8 +1,9 @@
-﻿using B4mServer.Models;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net.WebSockets;
 
-namespace B4mServer.Data;
+using RealTimeChatServer.Models;
+
+namespace RealTimeChatServer.Data;
 
 public class MemoryStore : IMemoryStore
 {
@@ -27,7 +28,7 @@ public class MemoryStore : IMemoryStore
 
 	public WebSocket? GetSocketById(string socketId)
 	{
-		_connectedSockets.TryGetValue(socketId, out var socket);
+		_connectedSockets.TryGetValue(socketId, out WebSocket? socket);
 		return socket;
 	}
 
@@ -48,7 +49,7 @@ public class MemoryStore : IMemoryStore
 
 	public User? GetUserBySocketId(string socketId)
 	{
-		_connectedUsers.TryGetValue(socketId, out var user);
+		_connectedUsers.TryGetValue(socketId, out User? user);
 		return user;
 	}
 
@@ -59,7 +60,7 @@ public class MemoryStore : IMemoryStore
 
 	public void AddUserToChannel(int channelId, User user)
 	{
-		if (_channelUsers.TryGetValue(channelId, out var users))
+		if (_channelUsers.TryGetValue(channelId, out List<User>? users))
 		{
 			if (!users.Contains(user))
 			{
@@ -74,7 +75,7 @@ public class MemoryStore : IMemoryStore
 
 	public void RemoveUserFromChannel(int channelId, User user)
 	{
-		if (_channelUsers.TryGetValue(channelId, out var users))
+		if (_channelUsers.TryGetValue(channelId, out List<User>? users))
 		{
 			users.Remove(user);
 		}
@@ -82,7 +83,7 @@ public class MemoryStore : IMemoryStore
 
 	public void RemoveUserBySocketId(string socketId)
 	{
-		var user = GetUserBySocketId(socketId);
+		User? user = GetUserBySocketId(socketId);
 		if (user != null)
 		{
 			RemoveUserFromChannel(GetChannelIdByUserId(user.Id), user);
@@ -92,7 +93,7 @@ public class MemoryStore : IMemoryStore
 
 	public List<User> GetUsersInChannel(int channelId)
 	{
-		_channelUsers.TryGetValue(channelId, out var users);
+		_channelUsers.TryGetValue(channelId, out List<User>? users);
 		return users ?? [];
 	}
 }

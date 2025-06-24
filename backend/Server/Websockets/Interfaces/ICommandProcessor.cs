@@ -1,6 +1,6 @@
-namespace B4mServer.Websockets.Interfaces;
+namespace RealTimeChatServer.Websockets.Interfaces;
 
 public interface ICommandProcessor
 {
-    Task ProcessCommand(string socketId, string command, string data);
+	Task ProcessCommand(string socketId, string command, string data);
 }

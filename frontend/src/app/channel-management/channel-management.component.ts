@@ -8,7 +8,6 @@ import { Channel, NewChannel } from '../../types/channel';
 	styleUrl: './channel-management.component.css'
 })
 export class ChannelManagementComponent implements OnInit {
-	// inputs are only for editing existing channels
 	@Input() channel!: Channel | NewChannel | null;
 	@Input() isEditMode: boolean = false;
 
@@ -45,7 +44,6 @@ export class ChannelManagementComponent implements OnInit {
 	onSubmit() {
 		if (this.channel) {
 			if (this.isEditMode) {
-				// force type as its not a new channel if we are editing
 				const existingChannel = this.channel as Channel;
 				this.webSocketService.updateChannel(existingChannel);
 			} else {
@@ -58,7 +56,6 @@ export class ChannelManagementComponent implements OnInit {
 	onDeleteChannel() {
 		if (this.channel) {
 			if (this.isEditMode) {
-				// force type as its not a new channel if we are editing
 				const existingChannel = this.channel as Channel;
 				this.webSocketService.deleteChannel(existingChannel);
 			}

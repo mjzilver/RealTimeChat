@@ -1,13 +1,15 @@
-﻿using B4mServer.Data;
-using B4mServer.Websockets;
-using B4mServer.Websockets.Interfaces;
-using Microsoft.AspNetCore.WebSockets;
-using Microsoft.EntityFrameworkCore;
-using B4mServer.Middleware;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace B4mServer;
+using Microsoft.AspNetCore.WebSockets;
+using Microsoft.EntityFrameworkCore;
+
+using RealTimeChatServer.Data;
+using RealTimeChatServer.Middleware;
+using RealTimeChatServer.Websockets;
+using RealTimeChatServer.Websockets.Interfaces;
+
+namespace RealTimeChatServer;
 
 public class Startup
 {
@@ -24,10 +26,9 @@ public class Startup
 			ReferenceHandler = ReferenceHandler.IgnoreCycles
 		});
 
-		// Add services
 		services.AddSingleton<IMemoryStore, MemoryStore>();
 		services.AddSingleton<IWebSocketSender, WebSocketSender>();
-		// Command processors
+
 		services.AddSingleton<IUserCommandProcessor, UserCommandProcessor>();
 		services.AddSingleton<IChannelCommandProcessor, ChannelCommandProcessor>();
 		services.AddSingleton<IMessageCommandProcessor, MessageCommandProcessor>();

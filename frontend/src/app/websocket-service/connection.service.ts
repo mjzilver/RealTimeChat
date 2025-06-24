@@ -29,7 +29,6 @@ export class ConnectionService {
 	private handleClose(): void {
 		this.connectionStatusSubject.next(false);
 
-		// Attempt to reconnect after a delay
 		setTimeout(() => this.connect(this.ws.url), 1000);
 	}
 

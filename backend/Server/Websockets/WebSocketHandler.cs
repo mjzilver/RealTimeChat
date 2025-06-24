@@ -1,10 +1,11 @@
 ﻿using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using B4mServer.Data;
-using B4mServer.Websockets.Interfaces;
 
-namespace B4mServer.Websockets;
+using RealTimeChatServer.Data;
+using RealTimeChatServer.Websockets.Interfaces;
+
+namespace RealTimeChatServer.Websockets;
 
 public class WebSocketHandler(
 	WebSocket webSocket,
@@ -15,7 +16,7 @@ public class WebSocketHandler(
 {
 	public async Task Handle()
 	{
-		string socketId = Guid.NewGuid().ToString();
+		var socketId = Guid.NewGuid().ToString();
 
 		try
 		{
@@ -24,12 +25,12 @@ public class WebSocketHandler(
 			while (webSocket.State == WebSocketState.Open)
 			{
 				var buffer = new byte[1024 * 4];
-				var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-	
+				WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
 				if (result.MessageType == WebSocketMessageType.Text)
 				{
 					var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
-					var command = JsonSerializer.Deserialize<WebSocketCommand>(json, options);
+					WebSocketCommand? command = JsonSerializer.Deserialize<WebSocketCommand>(json, options);
 
 					if (command != null)
 					{

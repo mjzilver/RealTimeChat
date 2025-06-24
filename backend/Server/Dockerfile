@@ -8,17 +8,17 @@ EXPOSE 5000
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["B4mServer.csproj", "."]
-RUN dotnet restore "./B4mServer.csproj"
+COPY ["RealTimeServerServer.csproj", "."]
+RUN dotnet restore "./RealTimeServerServer.csproj"
 COPY . .
 WORKDIR "/src/."
-RUN dotnet build "./B4mServer.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./RealTimeServerServer.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./B4mServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./RealTimeServerServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "B4mServer.dll"]
+ENTRYPOINT ["dotnet", "RealTimeServerServer.dll"]

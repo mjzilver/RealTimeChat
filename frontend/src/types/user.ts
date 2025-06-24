@@ -43,7 +43,6 @@ export class UserLogin {
 	}
 }
 
-// minimal user object for messages
 export class MessageUser {
 	id: number;
 	name: string;

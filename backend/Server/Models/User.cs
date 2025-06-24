@@ -1,7 +1,8 @@
-﻿using B4mServer.Websockets;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
-namespace B4mServer.Models;
+using RealTimeChatServer.Websockets;
+
+namespace RealTimeChatServer.Models;
 public partial class User
 {
 	public int Id { get; set; }

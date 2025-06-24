@@ -1,7 +1,8 @@
-﻿using B4mServer.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
-namespace B4mServer.Data;
+using RealTimeChatServer.Models;
+
+namespace RealTimeChatServer.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
@@ -9,7 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 	public DbSet<Message> Messages { get; set; }
 	public DbSet<Channel> Channels { get; set; }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
 		// User entity configuration
 		modelBuilder.Entity<User>()

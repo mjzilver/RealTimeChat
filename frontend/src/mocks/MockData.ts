@@ -71,7 +71,6 @@ const generateMockSocketMessages =
 		}
 	];
 
-// Function to generate all mock data
 export const MockDataFactory = () => {
 	const mockDates = generateMockDates();
 	const mockUsers = generateMockUsers(mockDates);

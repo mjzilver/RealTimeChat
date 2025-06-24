@@ -1,4 +1,4 @@
-﻿namespace B4mServer;
+﻿namespace RealTimeChatServer;
 public static class Program
 {
 	public static void Main(string[] args)

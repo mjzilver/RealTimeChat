@@ -1,8 +1,6 @@
-﻿using System.Text.Json;
-using B4mServer.Data;
-using B4mServer.Websockets.Interfaces;
+﻿using RealTimeChatServer.Websockets.Interfaces;
 
-namespace B4mServer.Websockets;
+namespace RealTimeChatServer.Websockets;
 
 public class WebSocketCommandProcessor(
 	IUserCommandProcessor userCommandProcessor,

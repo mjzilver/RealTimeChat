@@ -1,8 +1,9 @@
-﻿using B4mServer.Websockets;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace B4mServer.Models;
+using RealTimeChatServer.Websockets;
+
+namespace RealTimeChatServer.Models;
 
 public partial class Channel
 {
@@ -12,8 +13,6 @@ public partial class Channel
 	public string Color { get; set; } = null!;
 	[JsonIgnore]
 	public string? Password { get; set; }
-
-	// foreign key for Owner
 	public int? OwnerId { get; set; }
 
 	// Navigational Properties

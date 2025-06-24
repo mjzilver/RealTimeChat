@@ -1,9 +1,9 @@
-using B4mServer.Models;
+using RealTimeChatServer.Models;
 
-namespace B4mServer.Websockets.Interfaces;
+namespace RealTimeChatServer.Websockets.Interfaces;
 
 public interface IMessageCommandProcessor
 {
-    Task BroadcastMessage(Message message, string socketId);
-    Task GetMessages(int channelId, string socketId);
+	Task BroadcastMessage(Message message, string socketId);
+	Task GetMessages(int channelId, string socketId);
 }

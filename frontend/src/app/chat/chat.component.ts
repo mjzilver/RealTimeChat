@@ -32,7 +32,6 @@ export class ChatComponent implements OnInit, OnDestroy {
 	ngOnInit(): void {
 		this.messages = [];
 
-		// Subscribe to WebSocket messages
 		this.messagesSubscription = this.messageService.messages$.subscribe((message) => {
 			if (message.channel?.id === this.channel.id) {
 				this.messages.push(message);

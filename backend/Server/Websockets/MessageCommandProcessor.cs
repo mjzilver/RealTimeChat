@@ -1,21 +1,27 @@
 ﻿using System.Text.Json;
+
 using Microsoft.EntityFrameworkCore;
-using B4mServer.Models;
-using B4mServer.Data;
-using B4mServer.Validators;
-using B4mServer.Websockets.Interfaces;
 
-namespace B4mServer.Websockets;
+using RealTimeChatServer.Data;
+using RealTimeChatServer.Models;
+using RealTimeChatServer.Validators;
+using RealTimeChatServer.Websockets.Interfaces;
 
-public class MessageCommandProcessor(AppDbContext dbContext, IMemoryStore memoryStore,
-    IWebSocketSender webSocketSender, JsonSerializerOptions options) : IMessageCommandProcessor
+namespace RealTimeChatServer.Websockets;
+
+public class MessageCommandProcessor(
+	AppDbContext dbContext, 
+	IMemoryStore memoryStore,
+	IWebSocketSender webSocketSender, 
+	JsonSerializerOptions options) 
+: IMessageCommandProcessor
 {
-    public async Task GetMessages(int channelId, string socketId)
+	public async Task GetMessages(int channelId, string socketId)
 	{
-		var messages = await dbContext.Messages.Include(m => m.User).Include(m => m.Channel).Where(m => m.ChannelId == channelId).ToListAsync();
+		List<Message> messages = await dbContext.Messages.Include(m => m.User).Include(m => m.Channel).Where(m => m.ChannelId == channelId).ToListAsync();
 		var wsMessages = messages.Select(m => m.ToDTO()).ToList();
 		var response = JsonSerializer.Serialize(new { command = "messages", messages = wsMessages }, options);
-		var socket = memoryStore.GetSocketById(socketId);
+		System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{
 			await webSocketSender.SendAsync(socket, response);
@@ -32,9 +38,9 @@ public class MessageCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 			return;
 		}
 
-		var validation = MessageValidator.ValidateNewMessage(message);
+		(bool IsValid, string ErrorMessage) validation = MessageValidator.ValidateNewMessage(message);
 
-		if(!validation.IsValid)
+		if (!validation.IsValid)
 		{
 			await webSocketSender.SendErrorAsync(socketId, validation.ErrorMessage);
 			return;
@@ -42,7 +48,7 @@ public class MessageCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 
 		message.Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-		foreach (var socket in memoryStore.GetAllSockets())
+		foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
 		{
 			await webSocketSender.SendAsync(socket, JsonSerializer.Serialize(new { command = "broadcast", message }, options));
 		}
