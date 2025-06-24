@@ -1,0 +1,9 @@
+@if (error !== null && error !== undefined && error !== '') {
+<div class="error-container">
+    <div class="error-card">
+    <h2 class="error-card-title">Error</h2>
+    <p class="error-card-message">{{ error }}</p>
+    </div>
+    <button class="button error-close-button" (click)="closeError()">Close</button>
+</div>
+}

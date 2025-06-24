@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Server\B4mServer.csproj" />
+    <ProjectReference Include="..\Server\RealTimeChatServer.csproj" />
   </ItemGroup>
 
 </Project>
