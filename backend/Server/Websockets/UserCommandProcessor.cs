@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net.WebSockets;
+using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -9,8 +10,12 @@ using RealTimeChatServer.Websockets.Interfaces;
 
 namespace RealTimeChatServer.Websockets;
 
-public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memoryStore,
-	IWebSocketSender webSocketSender, JsonSerializerOptions options) : IUserCommandProcessor
+public class UserCommandProcessor(
+	AppDbContext dbContext,
+	IMemoryStore memoryStore,
+	IWebSocketSender webSocketSender,
+	JsonSerializerOptions options
+) : IUserCommandProcessor
 {
 	public string HashPassword(string password)
 	{
@@ -26,7 +31,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 	{
 		List<WebSocketUser> users = await dbContext.Users.Select(u => u.ToDTO()).ToListAsync();
 		var response = JsonSerializer.Serialize(new { command = "users", users }, options);
-		System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
+		WebSocket? socket = memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{
 			await webSocketSender.SendAsync(socket, response);
@@ -49,7 +54,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 			memoryStore.AddUser(socketId, existingUser);
 
 			var response = JsonSerializer.Serialize(new { command = "loginUser", user = existingUser.ToDTO() }, options);
-			System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
+			WebSocket? socket = memoryStore.GetSocketById(socketId);
 			if (socket != null)
 				await webSocketSender.SendAsync(socket, response);
 		}
@@ -74,7 +79,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 
 				var response = JsonSerializer.Serialize(new { command = "logoutUser", user = user.ToDTO(), channel }, options);
 				memoryStore.RemoveUser(socketId);
-				foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
+				foreach (WebSocket socket in memoryStore.GetAllSockets())
 				{
 					await webSocketSender.SendAsync(socket, response);
 				}
@@ -87,10 +92,10 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 		var existingUser = await dbContext.Users.AnyAsync(u => u.Name == user.Name);
 		if (!existingUser)
 		{
-			(bool IsValid, string ErrorMessage) validation = UserValidator.ValidateNewUser(user);
-			if (!validation.IsValid)
+			(var IsValid, var ErrorMessage) = UserValidator.ValidateNewUser(user);
+			if (!IsValid)
 			{
-				await webSocketSender.SendErrorAsync(socketId, validation.ErrorMessage);
+				await webSocketSender.SendErrorAsync(socketId, ErrorMessage);
 				return;
 			}
 
@@ -102,7 +107,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 
 			var response = JsonSerializer.Serialize(new { command = "registerUser", user = user.ToDTO() }, options);
 			memoryStore.AddUser(socketId, user);
-			System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
+			WebSocket? socket = memoryStore.GetSocketById(socketId);
 
 			if (socket == null) return;
 
@@ -130,10 +135,10 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 			return;
 		}
 
-		(bool IsValid, string ErrorMessage) validation = UserValidator.ValidateUpdatedUser(user, existingUser);
-		if (!validation.IsValid)
+		(var IsValid, var ErrorMessage) = UserValidator.ValidateUpdatedUser(user, existingUser);
+		if (!IsValid)
 		{
-			await webSocketSender.SendErrorAsync(socketId, validation.ErrorMessage);
+			await webSocketSender.SendErrorAsync(socketId, ErrorMessage);
 			return;
 		}
 
@@ -142,7 +147,7 @@ public class UserCommandProcessor(AppDbContext dbContext, IMemoryStore memorySto
 		await dbContext.SaveChangesAsync();
 
 		var response = JsonSerializer.Serialize(new { command = "userUpdated", user = existingUser.ToDTO() }, options);
-		foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
+		foreach (WebSocket socket in memoryStore.GetAllSockets())
 		{
 			await webSocketSender.SendAsync(socket, response);
 		}

@@ -4,6 +4,7 @@ root = true
 indent_style = tab
 indent_size = 4
 tab_width = 4
+csharp_style_primary_constructor = true:warning
 csharp_style_expression_bodied_methods = always:warning
 csharp_style_expression_bodied_properties = always:warning
 csharp_style_expression_bodied_indexers = always:warning

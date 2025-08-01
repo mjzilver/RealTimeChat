@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net.WebSockets;
+using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -9,8 +10,12 @@ using RealTimeChatServer.Websockets.Interfaces;
 
 namespace RealTimeChatServer.Websockets;
 
-public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memoryStore,
-	IWebSocketSender webSocketSender, JsonSerializerOptions options) : IChannelCommandProcessor
+public class ChannelCommandProcessor(
+	AppDbContext dbContext,
+	IMemoryStore memoryStore,
+	IWebSocketSender webSocketSender,
+	JsonSerializerOptions options
+) : IChannelCommandProcessor
 {
 	public async Task GetChannels(string socketId)
 	{
@@ -27,16 +32,16 @@ public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 		foreach (WebSocketChannel? channel in channels)
 		{
 			List<User> users = memoryStore.GetUsersInChannel(channel.Id ?? -1);
-			channel.Users = users.Select(u => new WebSocketUser
+			channel.Users = [.. users.Select(u => new WebSocketUser
 			{
 				Id = u.Id,
 				Name = u.Name,
 				Color = u.Color
-			}).ToList();
+			})];
 		}
 
 		var response = JsonSerializer.Serialize(new { command = "channels", channels }, options);
-		System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
+		WebSocket? socket = memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{
 			await webSocketSender.SendAsync(socket, response);
@@ -53,13 +58,13 @@ public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 			return;
 		}
 
-		(bool IsValid, string ErrorMessage) channelValidation = ChannelValidator.ValidateNewChannel(channel);
+		(var IsValid, var ErrorMessage) = ChannelValidator.ValidateNewChannel(channel);
 
-		Console.WriteLine(channelValidation.ErrorMessage);
+		Console.WriteLine(ErrorMessage);
 
-		if (!channelValidation.IsValid)
+		if (!IsValid)
 		{
-			await webSocketSender.SendErrorAsync(socketId, channelValidation.ErrorMessage);
+			await webSocketSender.SendErrorAsync(socketId, ErrorMessage);
 			return;
 		}
 
@@ -70,7 +75,7 @@ public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 		await dbContext.SaveChangesAsync();
 
 		var response = JsonSerializer.Serialize(new { command = "channelCreated", channel }, options);
-		foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
+		foreach (WebSocket socket in memoryStore.GetAllSockets())
 		{
 			await webSocketSender.SendAsync(socket, response);
 		}
@@ -82,7 +87,7 @@ public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 
 		if (currentChannel == null)
 		{
-			await webSocketSender.SendErrorAsync(socketId, "Channel does not exit");
+			await webSocketSender.SendErrorAsync(socketId, "Channel does not exist");
 			return;
 		}
 
@@ -101,7 +106,7 @@ public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 		await dbContext.SaveChangesAsync();
 
 		var response = JsonSerializer.Serialize(new { command = "channelUpdated", channel = currentChannel }, options);
-		foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
+		foreach (WebSocket socket in memoryStore.GetAllSockets())
 		{
 			await webSocketSender.SendAsync(socket, response);
 		}
@@ -126,7 +131,7 @@ public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 			dbContext.Channels.Remove(channel);
 			await dbContext.SaveChangesAsync();
 
-			System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
+			WebSocket? socket = memoryStore.GetSocketById(socketId);
 			if (socket != null)
 			{
 				await webSocketSender.SendAsync(socket, response);
@@ -149,7 +154,7 @@ public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 			wsChannel.Users = wsUsers;
 
 			var response = JsonSerializer.Serialize(new { command = "userJoinedChannel", channel = wsChannel }, options);
-			foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
+			foreach (WebSocket socket in memoryStore.GetAllSockets())
 			{
 				await webSocketSender.SendAsync(socket, response);
 			}
@@ -171,7 +176,7 @@ public class ChannelCommandProcessor(AppDbContext dbContext, IMemoryStore memory
 			wsChannel.Users = wsUsers;
 
 			var response = JsonSerializer.Serialize(new { command = "userLeftChannel", channel = wsChannel }, options);
-			foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
+			foreach (WebSocket socket in memoryStore.GetAllSockets())
 			{
 				await webSocketSender.SendAsync(socket, response);
 			}

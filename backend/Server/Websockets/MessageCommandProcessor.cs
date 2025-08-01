@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net.WebSockets;
+using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -10,18 +11,22 @@ using RealTimeChatServer.Websockets.Interfaces;
 namespace RealTimeChatServer.Websockets;
 
 public class MessageCommandProcessor(
-	AppDbContext dbContext, 
+	AppDbContext dbContext,
 	IMemoryStore memoryStore,
-	IWebSocketSender webSocketSender, 
-	JsonSerializerOptions options) 
-: IMessageCommandProcessor
+	IWebSocketSender webSocketSender,
+	JsonSerializerOptions options
+) : IMessageCommandProcessor
 {
 	public async Task GetMessages(int channelId, string socketId)
 	{
-		List<Message> messages = await dbContext.Messages.Include(m => m.User).Include(m => m.Channel).Where(m => m.ChannelId == channelId).ToListAsync();
+		List<Message> messages = await dbContext.Messages
+			.Include(m => m.User)
+			.Include(m => m.Channel)
+			.Where(m => m.ChannelId == channelId)
+			.ToListAsync();
 		var wsMessages = messages.Select(m => m.ToDTO()).ToList();
 		var response = JsonSerializer.Serialize(new { command = "messages", messages = wsMessages }, options);
-		System.Net.WebSockets.WebSocket? socket = memoryStore.GetSocketById(socketId);
+		WebSocket? socket = memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{
 			await webSocketSender.SendAsync(socket, response);
@@ -38,17 +43,17 @@ public class MessageCommandProcessor(
 			return;
 		}
 
-		(bool IsValid, string ErrorMessage) validation = MessageValidator.ValidateNewMessage(message);
+		(var IsValid, var ErrorMessage) = MessageValidator.ValidateNewMessage(message);
 
-		if (!validation.IsValid)
+		if (!IsValid)
 		{
-			await webSocketSender.SendErrorAsync(socketId, validation.ErrorMessage);
+			await webSocketSender.SendErrorAsync(socketId, ErrorMessage);
 			return;
 		}
 
 		message.Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-		foreach (System.Net.WebSockets.WebSocket socket in memoryStore.GetAllSockets())
+		foreach (WebSocket socket in memoryStore.GetAllSockets())
 		{
 			await webSocketSender.SendAsync(socket, JsonSerializer.Serialize(new { command = "broadcast", message }, options));
 		}

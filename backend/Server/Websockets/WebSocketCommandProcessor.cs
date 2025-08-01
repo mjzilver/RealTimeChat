@@ -5,8 +5,8 @@ namespace RealTimeChatServer.Websockets;
 public class WebSocketCommandProcessor(
 	IUserCommandProcessor userCommandProcessor,
 	IChannelCommandProcessor channelCommandProcessor,
-	IMessageCommandProcessor messageCommandProcessor)
-	: IWebSocketCommandProcessor
+	IMessageCommandProcessor messageCommandProcessor
+) : IWebSocketCommandProcessor
 {
 	private readonly IUserCommandProcessor _userCommandProcessor = userCommandProcessor;
 	private readonly IChannelCommandProcessor _channelCommandProcessor = channelCommandProcessor;
