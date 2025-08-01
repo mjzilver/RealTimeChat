@@ -21,44 +21,77 @@ public class WebSocketCommandProcessor(
 			switch (command.Command)
 			{
 				case "broadcastMessage":
-					await _messageCommandProcessor.BroadcastMessage(command.Message!.ToModel(), socketId);
+					if (command.Message is null)
+						throw new ArgumentNullException(nameof(command.Message));
+					await _messageCommandProcessor.BroadcastMessage(command.Message.ToModel(), socketId);
 					break;
+
 				case "getMessages":
-					await _messageCommandProcessor.GetMessages(command.Channel?.Id ?? 0, socketId);
+					if (command.Channel?.Id is not int channelId)
+						throw new ArgumentNullException("Channel ID is required");
+					await _messageCommandProcessor.GetMessages(channelId, socketId);
 					break;
+
 				case "getChannels":
 					await _channelCommandProcessor.GetChannels(socketId);
 					break;
+
 				case "createChannel":
-					await _channelCommandProcessor.CreateChannel(command.Channel!.ToModel(), socketId);
+					if (command.Channel is null)
+						throw new ArgumentNullException(nameof(command.Channel));
+					await _channelCommandProcessor.CreateChannel(command.Channel.ToModel(), socketId);
 					break;
+
 				case "deleteChannel":
-					await _channelCommandProcessor.DeleteChannel(command.Channel!.Id ?? -1, socketId);
+					if (command.Channel?.Id is not int deleteId)
+						throw new ArgumentNullException("Channel ID is required for deletion");
+					await _channelCommandProcessor.DeleteChannel(deleteId, socketId);
 					break;
+
 				case "updateChannel":
-					await _channelCommandProcessor.UpdateChannel(command.Channel!.ToModel(), socketId);
+					if (command.Channel is null)
+						throw new ArgumentNullException(nameof(command.Channel));
+					await _channelCommandProcessor.UpdateChannel(command.Channel.ToModel(), socketId);
 					break;
+
 				case "joinChannel":
-					await _channelCommandProcessor.JoinChannel(command.Channel!.Id ?? -1, command.User!.Id ?? -1);
+					if (command.Channel?.Id is not int joinChannelId || command.User?.Id is not int joinUserId)
+						throw new ArgumentException("Channel ID and User ID are required for joining");
+					await _channelCommandProcessor.JoinChannel(joinChannelId, joinUserId);
 					break;
+
 				case "leaveChannel":
-					await _channelCommandProcessor.LeaveChannel(command.Channel!.Id ?? -1, command.User!.Id ?? -1);
+					if (command.Channel?.Id is not int leaveChannelId || command.User?.Id is not int leaveUserId)
+						throw new ArgumentException("Channel ID and User ID are required for leaving");
+					await _channelCommandProcessor.LeaveChannel(leaveChannelId, leaveUserId);
 					break;
+
 				case "getUsers":
 					await _userCommandProcessor.GetUsers(socketId);
 					break;
+
 				case "loginUser":
-					await _userCommandProcessor.Login(command.User!.ToModel(), socketId);
+					if (command.User is null)
+						throw new ArgumentNullException(nameof(command.User));
+					await _userCommandProcessor.Login(command.User.ToModel(), socketId);
 					break;
+
 				case "logoutUser":
 					await _userCommandProcessor.Logout(socketId);
 					break;
+
 				case "registerUser":
-					await _userCommandProcessor.Register(command.User!.ToModel(), socketId);
+					if (command.User is null)
+						throw new ArgumentNullException(nameof(command.User));
+					await _userCommandProcessor.Register(command.User.ToModel(), socketId);
 					break;
+
 				case "updateUser":
-					await _userCommandProcessor.UpdateUser(command.User!.ToModel(), socketId);
+					if (command.User is null)
+						throw new ArgumentNullException(nameof(command.User));
+					await _userCommandProcessor.UpdateUser(command.User.ToModel(), socketId);
 					break;
+
 				default:
 					Console.WriteLine($"Unknown command: {command.Command}");
 					break;
@@ -69,6 +102,7 @@ public class WebSocketCommandProcessor(
 			Console.WriteLine($"Error: {ex.Message}");
 		}
 	}
+
 
 	public async void UserDisconnected(string socketId)
 	{
