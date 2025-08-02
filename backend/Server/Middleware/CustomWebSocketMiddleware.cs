@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.WebSockets;
 using System.Text.Json;
 
 using RealTimeChatServer.Data;
@@ -7,33 +6,35 @@ using RealTimeChatServer.Websockets;
 using RealTimeChatServer.Websockets.Interfaces;
 
 namespace RealTimeChatServer.Middleware;
-public class CustomWebSocketMiddleware(
-	RequestDelegate next,
-	IWebSocketCommandProcessor commandProcessor,
-	IMemoryStore memoryStore,
-	JsonSerializerOptions options)
+public class CustomWebSocketMiddleware(RequestDelegate next, IServiceProvider serviceProvider)
 {
-	private readonly RequestDelegate _next = next;
-	private readonly IWebSocketCommandProcessor _commandProcessor = commandProcessor;
-	private readonly IMemoryStore _memoryStore = memoryStore;
-	private readonly JsonSerializerOptions _options = options;
+    private readonly RequestDelegate _next = next;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
 
-	public async Task InvokeAsync(HttpContext context)
-	{
-		if (context.Request.Path == "/ws")
-		{
-			if (context.WebSockets.IsWebSocketRequest)
-			{
-				WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-				WebSocketHandler handler = new(webSocket, _commandProcessor, _memoryStore, _options);
-				await handler.Handle();
-			}
-			else
-			{
-				context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-			}
-		}
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if (context.Request.Path == "/ws")
+        {
+            if (context.WebSockets.IsWebSocketRequest)
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var dispatcher = scope.ServiceProvider.GetRequiredService<IWebSocketCommandDispatcher>();
+                var memoryStore = scope.ServiceProvider.GetRequiredService<IMemoryStore>();
+                var options = scope.ServiceProvider.GetRequiredService<JsonSerializerOptions>();
 
-		await _next(context);
-	}
+                var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                var handler = new WebSocketHandler(webSocket, dispatcher, memoryStore, options);
+
+                await handler.Handle();
+                return;
+            }
+            else
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+        }
+
+        await _next(context);
+    }
 }

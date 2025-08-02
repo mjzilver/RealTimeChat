@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-using RealTimeChatServer.Websockets;
+using RealTimeChatServer.Websockets.Payloads;
 
 namespace RealTimeChatServer.Models;
 public partial class User
@@ -18,10 +18,10 @@ public partial class User
 	[JsonIgnore]
 	public virtual ICollection<Channel> OwnedChannels { get; set; } = [];
 
-	public WebSocketUser ToDTO()
+	public WsUserDto ToDTO()
 	{
-		return new WebSocketUser
-		{
+		return new WsUserDto
+        {
 			Id = Id,
 			Name = Name,
 			Password = null, // Password is not sent to the client

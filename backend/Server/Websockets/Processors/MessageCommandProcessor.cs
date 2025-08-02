@@ -1,5 +1,4 @@
-﻿using System.Net.WebSockets;
-using System.Text.Json;
+﻿using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +7,7 @@ using RealTimeChatServer.Models;
 using RealTimeChatServer.Validators;
 using RealTimeChatServer.Websockets.Interfaces;
 
-namespace RealTimeChatServer.Websockets;
+namespace RealTimeChatServer.Websockets.Processors;
 
 public class MessageCommandProcessor(
 	AppDbContext dbContext,
@@ -19,14 +18,14 @@ public class MessageCommandProcessor(
 {
 	public async Task GetMessages(int channelId, string socketId)
 	{
-		List<Message> messages = await dbContext.Messages
+		var messages = await dbContext.Messages
 			.Include(m => m.User)
 			.Include(m => m.Channel)
 			.Where(m => m.ChannelId == channelId)
 			.ToListAsync();
 		var wsMessages = messages.Select(m => m.ToDTO()).ToList();
 		var response = JsonSerializer.Serialize(new { command = "messages", messages = wsMessages }, options);
-		WebSocket? socket = memoryStore.GetSocketById(socketId);
+		var socket = memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{
 			await webSocketSender.SendAsync(socket, response);
@@ -53,7 +52,7 @@ public class MessageCommandProcessor(
 
 		message.Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-		foreach (WebSocket socket in memoryStore.GetAllSockets())
+		foreach (var socket in memoryStore.GetAllSockets())
 		{
 			await webSocketSender.SendAsync(socket, JsonSerializer.Serialize(new { command = "broadcast", message }, options));
 		}

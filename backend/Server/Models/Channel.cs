@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-using RealTimeChatServer.Websockets;
+using RealTimeChatServer.Websockets.Payloads;
 
 namespace RealTimeChatServer.Models;
 
@@ -22,10 +22,10 @@ public partial class Channel
 	[JsonIgnore]
 	public virtual ICollection<Message> Messages { get; set; } = [];
 
-	public WebSocketChannel ToDTO()
+	public WsChannelDto ToDTO()
 	{
-		return new WebSocketChannel
-		{
+		return new WsChannelDto
+        {
 			Id = Id,
 			Name = Name,
 			Created = Created,

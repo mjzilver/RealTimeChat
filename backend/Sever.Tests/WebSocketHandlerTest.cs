@@ -8,6 +8,7 @@ using Moq;
 using RealTimeChatServer.Data;
 using RealTimeChatServer.Websockets;
 using RealTimeChatServer.Websockets.Interfaces;
+using RealTimeChatServer.Websockets.Payloads;
 
 namespace Sever.Tests
 {
@@ -15,7 +16,7 @@ namespace Sever.Tests
 	public class WebSocketHandlerTests
 	{
 		private Mock<WebSocket> _mockWebSocket = null!;
-		private Mock<IWebSocketCommandProcessor> _mockCommandProcessor = null!;
+		private Mock<IWebSocketCommandDispatcher> _mockDispatcher = null!;
 		private Mock<IMemoryStore> _mockMemoryStore = null!;
 		private readonly JsonSerializerOptions _options = new()
 		{
@@ -29,9 +30,9 @@ namespace Sever.Tests
 		public void Setup()
 		{
 			_mockWebSocket = new Mock<WebSocket>();
-			_mockCommandProcessor = new Mock<IWebSocketCommandProcessor>();
+			_mockDispatcher = new Mock<IWebSocketCommandDispatcher>();
 			_mockMemoryStore = new Mock<IMemoryStore>();
-			_webSocketHandler = new WebSocketHandler(_mockWebSocket.Object, _mockCommandProcessor.Object, _mockMemoryStore.Object, _options);
+			_webSocketHandler = new WebSocketHandler(_mockWebSocket.Object, _mockDispatcher.Object, _mockMemoryStore.Object, _options);
 
 			_mockWebSocket.SetupGet(w => w.State).Returns(WebSocketState.Open);
 
@@ -63,7 +64,7 @@ namespace Sever.Tests
 			await _webSocketHandler.Handle();
 
 			// Assert
-			_mockCommandProcessor.Verify(c => c.ProcessCommandAsync(It.IsAny<WebSocketCommand>(), It.IsAny<string>()), Times.Once);
+			_mockDispatcher.Verify(c => c.ProcessCommandAsync(It.IsAny<WsRequestDto>(), It.IsAny<string>()), Times.Once);
 		}
 
 		[TestMethod]
@@ -96,7 +97,7 @@ namespace Sever.Tests
 			await _webSocketHandler.Handle();
 
 			// Assert
-			_mockCommandProcessor.Verify(c => c.UserDisconnected(It.IsAny<string>()), Times.Once);
+			_mockDispatcher.Verify(c => c.HandleDisconnectionAsync(It.IsAny<string>()), Times.Once);
 			_mockWebSocket.Verify(w => w.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by server", It.IsAny<CancellationToken>()), Times.Once);
 		}
 
@@ -104,7 +105,7 @@ namespace Sever.Tests
 		public async Task Handle_ShouldCatchExceptions()
 		{
 			// Arrange
-			_mockCommandProcessor.Setup(c => c.ProcessCommandAsync(It.IsAny<WebSocketCommand>(), It.IsAny<string>()))
+			_mockDispatcher.Setup(c => c.ProcessCommandAsync(It.IsAny<WsRequestDto>(), It.IsAny<string>()))
 				.ThrowsAsync(new Exception("Test exception"));
 
 			// Act

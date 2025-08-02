@@ -11,7 +11,7 @@ public class ChannelValidator
 			return (false, "Invalid channel object");
 		}
 
-		(bool IsValid, string ErrorMessage) nameResult = SharedValidator.ValidateName(channel.Name);
+		var nameResult = SharedValidator.ValidateName(channel.Name);
 
 		if (!nameResult.IsValid)
 		{
@@ -22,13 +22,13 @@ public class ChannelValidator
 	}
 	public static (bool IsValid, string ErrorMessage) ValidateNewChannel(Channel channel)
 	{
-		(bool IsValid, string ErrorMessage) nameResult = SharedValidator.ValidateName(channel.Name);
+		var nameResult = SharedValidator.ValidateName(channel.Name);
 		if (!nameResult.IsValid)
 		{
 			return nameResult;
 		}
 
-		(bool IsValid, string ErrorMessage) colorResult = SharedValidator.ValidateColor(channel.Color);
+		var colorResult = SharedValidator.ValidateColor(channel.Color);
 		if (!colorResult.IsValid)
 		{
 			return colorResult;
@@ -36,7 +36,7 @@ public class ChannelValidator
 
 		if (channel.Password != null)
 		{
-			(bool IsValid, string ErrorMessage) passwordResult = SharedValidator.ValidatePassword(channel.Password);
+			var passwordResult = SharedValidator.ValidatePassword(channel.Password);
 			if (!passwordResult.IsValid)
 			{
 				return passwordResult;

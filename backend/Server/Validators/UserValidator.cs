@@ -6,7 +6,7 @@ public class UserValidator
 {
 	public static (bool IsValid, string ErrorMessage) ValidateNewUser(User user)
 	{
-		(bool IsValid, string ErrorMessage) nameResult = SharedValidator.ValidateName(user.Name);
+		var nameResult = SharedValidator.ValidateName(user.Name);
 		if (!nameResult.IsValid)
 		{
 			return nameResult;
@@ -17,7 +17,7 @@ public class UserValidator
 			return (false, "Password cannot be null");
 		}
 
-		(bool IsValid, string ErrorMessage) passwordResult = SharedValidator.ValidatePassword(user.Password);
+		var passwordResult = SharedValidator.ValidatePassword(user.Password);
 
 		if (!passwordResult.IsValid)
 		{

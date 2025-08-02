@@ -28,7 +28,7 @@ public class MemoryStore : IMemoryStore
 
 	public WebSocket? GetSocketById(string socketId)
 	{
-		_connectedSockets.TryGetValue(socketId, out WebSocket? socket);
+		_connectedSockets.TryGetValue(socketId, out var socket);
 		return socket;
 	}
 
@@ -49,7 +49,7 @@ public class MemoryStore : IMemoryStore
 
 	public User? GetUserBySocketId(string socketId)
 	{
-		_connectedUsers.TryGetValue(socketId, out User? user);
+		_connectedUsers.TryGetValue(socketId, out var user);
 		return user;
 	}
 
@@ -60,7 +60,7 @@ public class MemoryStore : IMemoryStore
 
 	public void AddUserToChannel(int channelId, User user)
 	{
-		if (_channelUsers.TryGetValue(channelId, out List<User>? users))
+		if (_channelUsers.TryGetValue(channelId, out var users))
 		{
 			if (!users.Contains(user))
 			{
@@ -75,7 +75,7 @@ public class MemoryStore : IMemoryStore
 
 	public void RemoveUserFromChannel(int channelId, User user)
 	{
-		if (_channelUsers.TryGetValue(channelId, out List<User>? users))
+		if (_channelUsers.TryGetValue(channelId, out var users))
 		{
 			users.Remove(user);
 		}
@@ -83,7 +83,7 @@ public class MemoryStore : IMemoryStore
 
 	public void RemoveUserBySocketId(string socketId)
 	{
-		User? user = GetUserBySocketId(socketId);
+		var user = GetUserBySocketId(socketId);
 		if (user != null)
 		{
 			RemoveUserFromChannel(GetChannelIdByUserId(user.Id), user);
@@ -93,7 +93,7 @@ public class MemoryStore : IMemoryStore
 
 	public List<User> GetUsersInChannel(int channelId)
 	{
-		_channelUsers.TryGetValue(channelId, out List<User>? users);
+		_channelUsers.TryGetValue(channelId, out var users);
 		return users ?? [];
 	}
 }
