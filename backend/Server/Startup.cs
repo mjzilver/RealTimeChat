@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using Microsoft.AspNetCore.WebSockets;
@@ -7,7 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using RealTimeChatServer.Data;
 using RealTimeChatServer.Middleware;
 using RealTimeChatServer.Websockets;
+using RealTimeChatServer.Websockets.Dispatcher;
 using RealTimeChatServer.Websockets.Interfaces;
+using RealTimeChatServer.Websockets.Processors;
 
 namespace RealTimeChatServer;
 
@@ -18,7 +21,7 @@ public class Startup
 		services.AddDbContext<AppDbContext>(options =>
 		{
 			options.UseSqlite("Data Source=app.db");
-		}, ServiceLifetime.Singleton);
+		}, ServiceLifetime.Scoped);
 
 		services.AddSingleton(new JsonSerializerOptions
 		{
@@ -29,10 +32,20 @@ public class Startup
 		services.AddSingleton<IMemoryStore, MemoryStore>();
 		services.AddSingleton<IWebSocketSender, WebSocketSender>();
 
-		services.AddSingleton<IUserCommandProcessor, UserCommandProcessor>();
-		services.AddSingleton<IChannelCommandProcessor, ChannelCommandProcessor>();
-		services.AddSingleton<IMessageCommandProcessor, MessageCommandProcessor>();
-		services.AddSingleton<IWebSocketCommandProcessor, WebSocketCommandProcessor>();
+		services.AddScoped<IUserCommandProcessor, UserCommandProcessor>();
+		services.AddScoped<IChannelCommandProcessor, ChannelCommandProcessor>();
+		services.AddScoped<IMessageCommandProcessor, MessageCommandProcessor>();
+
+        services.AddScoped<IWebSocketCommandDispatcher, WebSocketCommandDispatcher>();
+
+		var commandTypes = Assembly.GetExecutingAssembly()
+			.GetTypes()
+			.Where(t => typeof(IWebSocketCommand).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+		foreach (var type in commandTypes)
+		{
+			services.AddScoped(type);
+		}
 
 		services.AddWebSockets(options =>
 		{
@@ -57,6 +70,6 @@ public class Startup
 			endpoints.MapControllers();
 		});
 
-		app.UseMiddleware<CustomWebSocketMiddleware>();
+		app.UseMiddleware<ChatWebSocketMiddleware>();
 	}
 }

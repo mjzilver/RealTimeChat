@@ -24,7 +24,7 @@ public class WebSocketSender(IMemoryStore memoryStore, JsonSerializerOptions opt
 	public async Task SendErrorAsync(string socketId, string errorMessage)
 	{
 		var response = JsonSerializer.Serialize(new { command = "error", error = errorMessage }, _options);
-		WebSocket? socket = _memoryStore.GetSocketById(socketId);
+		var socket = _memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{
 			await SendAsync(socket, response);

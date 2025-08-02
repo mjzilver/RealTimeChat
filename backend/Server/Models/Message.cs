@@ -1,4 +1,4 @@
-﻿using RealTimeChatServer.Websockets;
+﻿using RealTimeChatServer.Websockets.Payloads;
 
 namespace RealTimeChatServer.Models;
 
@@ -14,10 +14,10 @@ public partial class Message
 	public virtual User User { get; set; } = null!;
 	public virtual Channel Channel { get; set; } = null!;
 
-	public WebSocketMessage ToDTO()
+	public WsMessageDto ToDTO()
 	{
-		return new WebSocketMessage
-		{
+		return new WsMessageDto
+        {
 			Id = Id,
 			Text = Text,
 			Time = Time,
@@ -28,10 +28,10 @@ public partial class Message
 		};
 	}
 
-	public WebSocketMessage ToMinimalDTO()
+	public WsMessageDto ToMinimalDTO()
 	{
-		return new WebSocketMessage
-		{
+		return new WsMessageDto
+        {
 			Id = Id,
 			Text = Text,
 			Time = Time,
