@@ -16,13 +16,20 @@ public class WebSocketCommandDispatcher(IServiceProvider serviceProvider, IUserC
 
 	public async Task ProcessCommandAsync(WsRequestDto request, string socketId)
 	{
-		if (_commands.TryGetValue(request.Command, out var handler))
+		var type = request.Type;
+		if (string.IsNullOrWhiteSpace(type))
+		{
+			Console.WriteLine("Received request with empty Type");
+			return;
+		}
+
+		if (_commands.TryGetValue(type, out var handler))
 		{
 			await handler.ExecuteAsync(request, socketId);
 		}
 		else
 		{
-			Console.WriteLine($"Unknown command: {request.Command}");
+			Console.WriteLine($"Unknown command/type: {type}");
 		}
 	}
 

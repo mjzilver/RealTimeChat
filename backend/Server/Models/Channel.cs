@@ -1,8 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-using RealTimeChatServer.Websockets.Payloads;
-
 namespace RealTimeChatServer.Models;
 
 public partial class Channel
@@ -21,17 +19,4 @@ public partial class Channel
 	public virtual User? Owner { get; set; }
 	[JsonIgnore]
 	public virtual ICollection<Message> Messages { get; set; } = [];
-
-	public WsChannelDto ToDTO()
-	{
-		return new WsChannelDto
-        {
-			Id = Id,
-			Name = Name,
-			Created = Created,
-			Color = Color,
-			OwnerId = OwnerId,
-			Messages = Messages.Select(m => m.ToMinimalDTO()).ToList()
-		};
-	}
 }

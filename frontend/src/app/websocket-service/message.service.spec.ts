@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MessageService } from './message.service';
 import { Channel } from '../../types/channel';
-import { SocketMessage } from '../../types/socketMessage';
+import { MessagePayload } from '../../types/socketMessage';
 import { MockDataFactory } from '../../mocks/MockData';
 
 describe('MessageService', () => {
@@ -25,7 +25,7 @@ describe('MessageService', () => {
 		const mockUser1 = mockData.mockUsers[0];
 		const mockUser2 = mockData.mockUsers[1];
 
-		const socketMessages: SocketMessage[] = [
+		const socketMessages: MessagePayload[] = [
 			{
 				channelId: channels[0].id,
 				text: 'Hello World!',
@@ -50,7 +50,7 @@ describe('MessageService', () => {
 	it('should warn if user or channel is missing in parseMessage', () => {
 		const consoleWarnSpy = spyOn(console, 'warn');
 
-		const socketMessage: SocketMessage = {
+		const socketMessage: MessagePayload = {
 			text: 'Hello World!',
 			time: Date.now(),
 			userId: 0,
@@ -64,7 +64,7 @@ describe('MessageService', () => {
 	});
 
 	it('should parse and return a message correctly', () => {
-		const result = service.parseMessage(mockData.mockSocketMessages[0], mockData.mockChannels);
+		const result = service.parseMessage(mockData.mockSocketMessages[0] as MessagePayload, mockData.mockChannels);
 
 		expect(result.channel.id).toEqual(mockData.mockMessages[0].channel.id);
 		expect(result.text).toEqual(mockData.mockMessages[0].text);

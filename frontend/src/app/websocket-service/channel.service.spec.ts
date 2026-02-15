@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ChannelService } from './channel.service';
-import { SocketChannel, SocketResponse, SocketUser } from '../../types/socketMessage';
+import { ChannelPayload, UserPayload } from '../../types/socketMessage';
 
 import { MockDataFactory } from '../../mocks/MockData';
 
@@ -19,7 +19,7 @@ describe('ChannelService', () => {
 	});
 
 	it('should parse and emit channels', done => {
-		const socketChannels: SocketChannel[] = [
+		const socketChannels: ChannelPayload[] = [
 			mockData.mockSocketChannels[0],
 			mockData.mockSocketChannels[1]
 		];
@@ -36,26 +36,21 @@ describe('ChannelService', () => {
 	});
 
 	it('should update channel users', () => {
-		const testUser1: SocketUser = mockData.mockSocketUsers[0];
-		const testUser2: SocketUser = mockData.mockSocketUsers[1];
+		const testUser1: UserPayload = mockData.mockSocketUsers[0] as UserPayload;
+		const testUser2: UserPayload = mockData.mockSocketUsers[1] as UserPayload;
 
-		const socketUsers: SocketUser[] = [
+		const socketUsers: UserPayload[] = [
 			testUser1, testUser2
 		];
 
-		const socketChannels: SocketChannel[] = [
+		const socketChannels: ChannelPayload[] = [
 			mockData.mockSocketChannels[0]
 		];
-		socketChannels[0].users = socketUsers;
+		socketChannels[0].users = socketUsers as UserPayload[];
 
 		service.parseChannels(socketChannels);
 
-		const socketResponse: SocketResponse = {
-			command: 'channels',
-			channel: socketChannels[0]
-		};
-
-		service.updateChannelUsers(socketResponse);
+		service.updateChannelUsers(socketChannels[0]);
 
 		const channels = service.getChannels();
 		expect(channels[0].users.length).toBe(2);
@@ -64,7 +59,7 @@ describe('ChannelService', () => {
 	});
 
 	it('should return channels', () => {
-		const socketChannels: SocketChannel[] = [
+		const socketChannels: ChannelPayload[] = [
 			mockData.mockSocketChannels[0],
 			mockData.mockSocketChannels[1]
 		];

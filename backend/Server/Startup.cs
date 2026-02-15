@@ -26,6 +26,7 @@ public class Startup
 		services.AddSingleton(new JsonSerializerOptions
 		{
 			PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+			PropertyNameCaseInsensitive = true,
 			ReferenceHandler = ReferenceHandler.IgnoreCycles
 		});
 
@@ -36,7 +37,7 @@ public class Startup
 		services.AddScoped<IChannelCommandProcessor, ChannelCommandProcessor>();
 		services.AddScoped<IMessageCommandProcessor, MessageCommandProcessor>();
 
-        services.AddScoped<IWebSocketCommandDispatcher, WebSocketCommandDispatcher>();
+		services.AddScoped<IWebSocketCommandDispatcher, WebSocketCommandDispatcher>();
 
 		var commandTypes = Assembly.GetExecutingAssembly()
 			.GetTypes()

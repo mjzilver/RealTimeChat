@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { User } from '../../types/user';
-import { SocketUser } from '../../types/socketMessage';
+import { UserPayload } from '../../types/socketMessage';
 
 @Injectable({
 	providedIn: 'root',
@@ -16,7 +16,7 @@ export class UserService {
 	private users: User[] = [];
 	private currentUser: User | null = null;
 
-	parseUsers(data: SocketUser[]): User[] {
+	parseUsers(data: UserPayload[]): User[] {
 		this.users = data.map(item => new User(item.id, item.name, item.joined, item.color));
 		this.userSubject.next(this.users);
 		return this.users;
@@ -26,7 +26,7 @@ export class UserService {
 		this.currentUserSubject.next(this.currentUser);
 	}
 
-	handleLogin(user: SocketUser): void {
+	handleLogin(user: UserPayload): void {
 		const currentUser = new User(user.id, user.name, user.joined, user.color);
 		this.currentUserSubject.next(currentUser);
 		this.currentUser = currentUser;

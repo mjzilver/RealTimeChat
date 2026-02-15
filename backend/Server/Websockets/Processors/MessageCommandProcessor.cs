@@ -23,8 +23,17 @@ public class MessageCommandProcessor(
 			.Include(m => m.Channel)
 			.Where(m => m.ChannelId == channelId)
 			.ToListAsync();
-		var wsMessages = messages.Select(m => m.ToDTO()).ToList();
-		var response = JsonSerializer.Serialize(new { command = "messages", messages = wsMessages }, options);
+		var wsMessages = messages.Select(m => new Payloads.MessagePayload(
+			m.Id,
+			m.UserId,
+			m.ChannelId,
+			m.Text,
+			m.Time,
+			new Payloads.UserPayload(m.User.Id, m.User.Name, m.User.Color, m.User.Joined)
+		)).ToList();
+
+		var envelope = new { type = "messages", payload = new { messages = wsMessages } };
+		var response = JsonSerializer.Serialize(envelope, options);
 		var socket = memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{
@@ -34,13 +43,17 @@ public class MessageCommandProcessor(
 
 	public async Task BroadcastMessage(Message message, string socketId)
 	{
-		message.User = await dbContext.Users.FindAsync(message.UserId) ?? new User();
-		message.Channel = await dbContext.Channels.FindAsync(message.ChannelId) ?? new Channel();
+		var user = await dbContext.Users.FindAsync(message.UserId);
+		var channel = await dbContext.Channels.FindAsync(message.ChannelId);
 
-		if (message.User == null || message.Channel == null)
+		if (user == null || channel == null)
 		{
+			await webSocketSender.SendErrorAsync(socketId, "User or channel not found");
 			return;
 		}
+
+		message.User = user;
+		message.Channel = channel;
 
 		(var IsValid, var ErrorMessage) = MessageValidator.ValidateNewMessage(message);
 
@@ -52,9 +65,20 @@ public class MessageCommandProcessor(
 
 		message.Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-		foreach (var socket in memoryStore.GetAllSockets())
+		var sockets = memoryStore.GetSocketsInChannel(message.ChannelId);
+		var msgPayload = new Payloads.MessagePayload(
+			message.Id,
+			message.UserId,
+			message.ChannelId,
+			message.Text,
+			message.Time,
+			new Payloads.UserPayload(message.User.Id, message.User.Name, message.User.Color, message.User.Joined)
+		);
+		var envelope = new { type = "broadcast", payload = new { message = msgPayload } };
+		var serialized = JsonSerializer.Serialize(envelope, options);
+		foreach (var socket in sockets)
 		{
-			await webSocketSender.SendAsync(socket, JsonSerializer.Serialize(new { command = "broadcast", message }, options));
+			await webSocketSender.SendAsync(socket, serialized);
 		}
 
 		await dbContext.Messages.AddAsync(message);

@@ -51,7 +51,7 @@ namespace Sever.Tests
 		public async Task Handle_ShouldAddSocketConnectionToMemoryStore()
 		{
 			// Act
-			await _webSocketHandler.Handle();
+			await _webSocketHandler.Handle(CancellationToken.None);
 
 			// Assert
 			_mockMemoryStore.Verify(m => m.AddSocketConnection(It.IsAny<string>(), _mockWebSocket.Object), Times.Once);
@@ -61,7 +61,7 @@ namespace Sever.Tests
 		public async Task Handle_ShouldProcessCommandAsync()
 		{
 			// Act
-			await _webSocketHandler.Handle();
+			await _webSocketHandler.Handle(CancellationToken.None);
 
 			// Assert
 			_mockDispatcher.Verify(c => c.ProcessCommandAsync(It.IsAny<WsRequestDto>(), It.IsAny<string>()), Times.Once);
@@ -74,7 +74,7 @@ namespace Sever.Tests
 			_mockWebSocket.SetupGet(w => w.State).Returns(WebSocketState.CloseReceived);
 
 			// Act
-			await _webSocketHandler.Handle();
+			await _webSocketHandler.Handle(CancellationToken.None);
 
 			// Assert
 			_mockMemoryStore.Verify(m => m.RemoveSocketConnection(It.IsAny<string>()), Times.Once);
@@ -94,7 +94,7 @@ namespace Sever.Tests
 				.Returns(WebSocketState.CloseReceived);
 
 			// Act
-			await _webSocketHandler.Handle();
+			await _webSocketHandler.Handle(CancellationToken.None);
 
 			// Assert
 			_mockDispatcher.Verify(c => c.HandleDisconnectionAsync(It.IsAny<string>()), Times.Once);
@@ -109,7 +109,7 @@ namespace Sever.Tests
 				.ThrowsAsync(new Exception("Test exception"));
 
 			// Act
-			await _webSocketHandler.Handle();
+			await _webSocketHandler.Handle(CancellationToken.None);
 
 			// Assert
 			_mockMemoryStore.Verify(m => m.RemoveSocketConnection(It.IsAny<string>()), Times.Once);

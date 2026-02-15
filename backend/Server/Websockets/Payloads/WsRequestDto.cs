@@ -1,9 +1,10 @@
+using System.Text.Json;
+
 namespace RealTimeChatServer.Websockets.Payloads;
 
 public record WsRequestDto
 {
-	public required string Command { get; init; }
-	public WsMessageDto? Message { get; init; }
-	public WsUserDto? User { get; init; }
-	public WsChannelDto? Channel { get; init; }
+	public int Version { get; init; } = 1;
+	public required string Type { get; init; }
+	public JsonElement? Payload { get; init; }
 }

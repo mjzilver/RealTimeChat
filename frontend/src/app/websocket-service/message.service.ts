@@ -3,7 +3,7 @@ import { Subject } from 'rxjs';
 import { Message } from '../../types/message';
 import { Channel } from '../../types/channel';
 import { MessageUser } from '../../types/user';
-import { SocketMessage } from '../../types/socketMessage';
+import { MessagePayload } from '../../types/socketMessage';
 
 @Injectable({
 	providedIn: 'root',
@@ -15,10 +15,10 @@ export class MessageService {
 	private resetMessagesSubject = new Subject<void>();
 	resetMessages$ = this.resetMessagesSubject.asObservable();
 
-	parseMessages(data: SocketMessage[], channels: Channel[]): void {
+	parseMessages(data: MessagePayload[], channels: Channel[]): void {
 		this.resetMessagesSubject.next();
 
-		data.forEach((item: SocketMessage) => {
+		data.forEach((item: MessagePayload) => {
 			const channel = channels.find(c => c.id === item.channelId);
 			const user = item.user ? new MessageUser(item.user.id, item.user.name, item.user.color) : undefined;
 
@@ -31,12 +31,12 @@ export class MessageService {
 		});
 	}
 
-	parseMessage(data: SocketMessage, channels: Channel[]): Message {
-		if (!data || data.channel === undefined || data.user === undefined) {
+	parseMessage(data: MessagePayload, channels: Channel[]): Message {
+		if (!data || data.user === undefined) {
 			console.warn('User or Channel is missing in parseMessage', data);
 		}
 
-		const channel = channels.find(c => c.id === data.channel?.id || c.id === data.channelId);
+		const channel = channels.find(c => c.id === data.channelId);
 		const user = new MessageUser(data.user!.id, data.user!.name, data.user!.color);
 
 		if (!user || !channel) {

@@ -23,7 +23,8 @@ public class WebSocketSender(IMemoryStore memoryStore, JsonSerializerOptions opt
 
 	public async Task SendErrorAsync(string socketId, string errorMessage)
 	{
-		var response = JsonSerializer.Serialize(new { command = "error", error = errorMessage }, _options);
+		var envelope = new { type = "error", payload = new { error = new { message = errorMessage } } };
+		var response = JsonSerializer.Serialize(envelope, _options);
 		var socket = _memoryStore.GetSocketById(socketId);
 		if (socket != null)
 		{

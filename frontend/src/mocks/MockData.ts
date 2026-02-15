@@ -1,5 +1,5 @@
 import { Channel } from "../types/channel";
-import { SocketChannel, SocketUser } from "../types/socketMessage";
+import { ChannelPayload, UserPayload, MessagePayload } from "../types/socketMessage";
 import { User } from "../types/user";
 
 const getUnixTimestamp = (): number => Date.now();
@@ -23,7 +23,7 @@ const generateMockSocketUsers = (mockUsers: User[]) =>
 		name: user.name,
 		joined: user.joined,
 		color: user.color
-	}));
+	} as UserPayload));
 
 const generateMockChannels = (): Channel[] => [
 	new Channel(1, 'Channel 1', 'red'),
@@ -36,7 +36,7 @@ const generateMockSocketChannels = (mockChannels: Channel[]) =>
 		name: channel.name,
 		color: channel.color,
 		created: getUnixTimestamp()
-	}));
+	} as ChannelPayload));
 
 const generateMockMessages = (mockUsers: User[], mockChannels: Channel[]) => [
 	{
@@ -54,21 +54,21 @@ const generateMockMessages = (mockUsers: User[], mockChannels: Channel[]) => [
 ];
 
 const generateMockSocketMessages = 
-	(mockSocketUsers: SocketUser[], mockSocketChannels: SocketChannel[]) => [
+	(mockSocketUsers: UserPayload[], mockSocketChannels: ChannelPayload[]) => [
 		{
 			channelId: mockSocketChannels[0].id,
 			text: 'Hello World!',
 			time: getUnixTimestamp(),
 			userId: mockSocketUsers[0].id,
 			user: mockSocketUsers[0]
-		},
+		} as MessagePayload,
 		{
 			channelId: mockSocketChannels[1].id,
 			text: 'Goodbye!',
 			time: getUnixTimestamp(),
 			userId: mockSocketUsers[1].id,
 			user: mockSocketUsers[1]
-		}
+		} as MessagePayload
 	];
 
 export const MockDataFactory = () => {

@@ -9,7 +9,8 @@ public class MemoryStore : IMemoryStore
 {
 	private readonly ConcurrentDictionary<string, WebSocket> _connectedSockets = new();
 	private readonly ConcurrentDictionary<string, User> _connectedUsers = new();
-	private readonly ConcurrentDictionary<int, List<User>> _channelUsers = new();
+	private readonly ConcurrentDictionary<int, ConcurrentDictionary<int, User>> _channelUsers = new();
+	private readonly ConcurrentDictionary<int, string> _userSocketMap = new();
 
 	public void AddSocketConnection(string socketId, WebSocket socket)
 	{
@@ -21,9 +22,16 @@ public class MemoryStore : IMemoryStore
 		_connectedSockets.TryRemove(socketId, out _);
 	}
 
-	public int GetChannelIdByUserId(int userId)
+	public int? GetChannelIdByUserId(int userId)
 	{
-		return _channelUsers.FirstOrDefault(c => c.Value.Exists(u => u.Id == userId)).Key;
+		foreach (var kv in _channelUsers)
+		{
+			if (kv.Value != null && kv.Value.ContainsKey(userId))
+			{
+				return kv.Key;
+			}
+		}
+		return null;
 	}
 
 	public WebSocket? GetSocketById(string socketId)
@@ -40,11 +48,15 @@ public class MemoryStore : IMemoryStore
 	public void AddUser(string socketId, User user)
 	{
 		_connectedUsers[socketId] = user;
+		_userSocketMap[user.Id] = socketId;
 	}
 
 	public void RemoveUser(string socketId)
 	{
-		_connectedUsers.TryRemove(socketId, out _);
+		if (_connectedUsers.TryRemove(socketId, out var user))
+		{
+			_userSocketMap.TryRemove(user.Id, out _);
+		}
 	}
 
 	public User? GetUserBySocketId(string socketId)
@@ -55,29 +67,29 @@ public class MemoryStore : IMemoryStore
 
 	public User? GetUserById(int userId)
 	{
+		if (_userSocketMap.TryGetValue(userId, out var socketId))
+		{
+			_connectedUsers.TryGetValue(socketId, out var user);
+			return user;
+		}
 		return _connectedUsers.Values.FirstOrDefault(u => u.Id == userId);
 	}
 
 	public void AddUserToChannel(int channelId, User user)
 	{
-		if (_channelUsers.TryGetValue(channelId, out var users))
-		{
-			if (!users.Contains(user))
-			{
-				users.Add(user);
-			}
-		}
-		else
-		{
-			_channelUsers[channelId] = [user];
-		}
+		var users = _channelUsers.GetOrAdd(channelId, _ => new ConcurrentDictionary<int, User>());
+		users[user.Id] = user;
 	}
 
 	public void RemoveUserFromChannel(int channelId, User user)
 	{
 		if (_channelUsers.TryGetValue(channelId, out var users))
 		{
-			users.Remove(user);
+			users.TryRemove(user.Id, out _);
+			if (users.IsEmpty)
+			{
+				_channelUsers.TryRemove(channelId, out _);
+			}
 		}
 	}
 
@@ -86,14 +98,46 @@ public class MemoryStore : IMemoryStore
 		var user = GetUserBySocketId(socketId);
 		if (user != null)
 		{
-			RemoveUserFromChannel(GetChannelIdByUserId(user.Id), user);
+			var channelId = GetChannelIdByUserId(user.Id);
+			if (channelId.HasValue)
+			{
+				RemoveUserFromChannel(channelId.Value, user);
+			}
 			RemoveUser(socketId);
 		}
 	}
 
+	public IEnumerable<WebSocket> GetSocketsInChannel(int channelId)
+	{
+		if (!_channelUsers.TryGetValue(channelId, out var users)
+			|| users == null
+			|| users.IsEmpty)
+		{
+			return [];
+		}
+
+		var sockets = new List<WebSocket>();
+		foreach (var kv in users)
+		{
+			var userId = kv.Key;
+			if (_userSocketMap.TryGetValue(userId, out var socketId))
+			{
+				if (_connectedSockets.TryGetValue(socketId, out var socket) && socket.State == WebSocketState.Open)
+				{
+					sockets.Add(socket);
+				}
+			}
+		}
+
+		return sockets;
+	}
+
 	public List<User> GetUsersInChannel(int channelId)
 	{
-		_channelUsers.TryGetValue(channelId, out var users);
-		return users ?? [];
+		if (_channelUsers.TryGetValue(channelId, out var users))
+		{
+			return [.. users.Values];
+		}
+		return [];
 	}
 }
