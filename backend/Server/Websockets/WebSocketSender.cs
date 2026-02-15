@@ -1,4 +1,5 @@
-﻿using System.Net.WebSockets;
+﻿using System.Buffers;
+using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 
@@ -16,8 +17,18 @@ public class WebSocketSender(IMemoryStore memoryStore, JsonSerializerOptions opt
 	{
 		if (socket.State == WebSocketState.Open)
 		{
-			var encodedMessage = Encoding.UTF8.GetBytes(message);
-			await socket.SendAsync(new ArraySegment<byte>(encodedMessage), WebSocketMessageType.Text, true, CancellationToken.None);
+			var pool = ArrayPool<byte>.Shared;
+			var needed = Encoding.UTF8.GetByteCount(message);
+			var buffer = pool.Rent(needed);
+			try
+			{
+				var written = Encoding.UTF8.GetBytes(message, 0, message.Length, buffer, 0);
+				await socket.SendAsync(new ArraySegment<byte>(buffer, 0, written), WebSocketMessageType.Text, true, CancellationToken.None);
+			}
+			finally
+			{
+				try { pool.Return(buffer); } catch { }
+			}
 		}
 	}
 

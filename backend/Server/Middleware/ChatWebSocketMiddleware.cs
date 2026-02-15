@@ -26,7 +26,7 @@ public class ChatWebSocketMiddleware(RequestDelegate next, IServiceProvider serv
 				var webSocket = await context.WebSockets.AcceptWebSocketAsync();
 				var handler = new WebSocketHandler(webSocket, dispatcher, memoryStore, options);
 
-				await handler.Handle();
+				await handler.Handle(context.RequestAborted);
 				return;
 			}
 			else
